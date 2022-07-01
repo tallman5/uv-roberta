@@ -21,21 +21,6 @@ namespace Roberta.Io
                 this._Timestamp = DateTimeOffset.Now;
         }
 
-        private bool _IsOnline;
-        [DataMember]
-        public bool IsOnline
-        {
-            get { return this._IsOnline; }
-            set
-            {
-                if (this._IsOnline != value)
-                {
-                    this._IsOnline = value;
-                    RaisePropertyChanged("IsOnline");
-                }
-            }
-        }
-
         private DateTimeOffset _Timestamp;
         [DataMember]
         public virtual DateTimeOffset Timestamp
