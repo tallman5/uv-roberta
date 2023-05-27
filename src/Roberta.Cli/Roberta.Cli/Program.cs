@@ -23,12 +23,12 @@ namespace Roberta.Cli
             gpsState = new GpsState();
             gpsState.PropertyChanged += GpsState_PropertyChanged;
             GpsConnection gpsConnection = new GpsConnection(gpsPortName, gpsState);
-            //gpsConnection.Open();
+            gpsConnection.Open();
 
             roboteqState = new RoboteqState();
             roboteqState.PropertyChanged += RoboteqState_PropertyChanged;
             RoboteqConnection roboteqConnection = new RoboteqConnection(roboteqPortName, roboteqState);
-            roboteqConnection.Open();
+            //roboteqConnection.Open();
 
             keepRunning = true;
             Console.CancelKeyPress += Console_CancelKeyPress;

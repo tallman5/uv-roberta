@@ -121,9 +121,13 @@ namespace Roberta.Io
                     double speed;
                     if (double.TryParse(fields[7], out speed))
                         GpsState.Speed = speed;
+                    else
+                        GpsState.Speed = 0;
                     double heading;
                     if (double.TryParse(fields[8], out heading))
                         GpsState.Heading = heading;
+                    else
+                        GpsState.Heading = 0;
                     break;
             }
         }
