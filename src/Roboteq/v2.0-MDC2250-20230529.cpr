@@ -571,17 +571,17 @@
     <Item Command="PMIN" Index="1" Node="Pulse Inputs|PIn1|Range|Input Min">
       <ArgumentType>IntegerList</ArgumentType>
       <Multiplier>1</Multiplier>
-      <Value>1000</Value>
+      <Value>1098</Value>
     </Item>
     <Item Command="PCTR" Index="1" Node="Pulse Inputs|PIn1|Range|Input Center">
       <ArgumentType>IntegerList</ArgumentType>
       <Multiplier>1</Multiplier>
-      <Value>1500</Value>
+      <Value>1498</Value>
     </Item>
     <Item Command="PMAX" Index="1" Node="Pulse Inputs|PIn1|Range|Input Max">
       <ArgumentType>IntegerList</ArgumentType>
       <Multiplier>1</Multiplier>
-      <Value>2000</Value>
+      <Value>1899</Value>
     </Item>
     <Item Command="PPOL" Index="1" Node="Pulse Inputs|PIn1|Capture Polarity">
       <ArgumentType>IntegerList</ArgumentType>
@@ -616,17 +616,17 @@
     <Item Command="PMIN" Index="2" Node="Pulse Inputs|PIn2|Range|Input Min">
       <ArgumentType>IntegerList</ArgumentType>
       <Multiplier>1</Multiplier>
-      <Value>1000</Value>
+      <Value>1098</Value>
     </Item>
     <Item Command="PCTR" Index="2" Node="Pulse Inputs|PIn2|Range|Input Center">
       <ArgumentType>IntegerList</ArgumentType>
       <Multiplier>1</Multiplier>
-      <Value>1500</Value>
+      <Value>1498</Value>
     </Item>
     <Item Command="PMAX" Index="2" Node="Pulse Inputs|PIn2|Range|Input Max">
       <ArgumentType>IntegerList</ArgumentType>
       <Multiplier>1</Multiplier>
-      <Value>2000</Value>
+      <Value>1899</Value>
     </Item>
     <Item Command="PPOL" Index="2" Node="Pulse Inputs|PIn2|Capture Polarity">
       <ArgumentType>IntegerList</ArgumentType>
