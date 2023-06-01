@@ -82,12 +82,18 @@ namespace Roberta.Io
         private void SerialPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
             string newLine;
+
             try
             {
+                if (!_SerialPort.IsOpen) return;
                 newLine = _SerialPort.ReadLine();
                 _SerialPort.DiscardInBuffer();
             }
-            catch { return; }
+            catch
+            {
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(newLine)) return;
             bool isValid = false;
             string sentenceToCheck = "";
@@ -140,6 +146,11 @@ namespace Roberta.Io
         {
             _SerialPort.DataReceived += SerialPort_DataReceived;
             _SerialPort.Open();
+
+            //// Switch from SiRF Binary to NMEA Output
+            //string str = "A0 A2 00 18 81 02 01 01 00 01 01 01 05 01 01 01 00 01 00 01 00 00 00 01 00 00 12 C0 01 65 B0 B3";
+            //byte[] bytes = str.Split(' ').Select(s => Convert.ToByte(s, 16)).ToArray();
+            //_SerialPort.Write(bytes, 0, bytes.Length);
         }
     }
 }
