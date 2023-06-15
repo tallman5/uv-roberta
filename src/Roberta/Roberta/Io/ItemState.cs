@@ -15,7 +15,7 @@ namespace Roberta.Io
             this.PropertyChanged += ItemState_PropertyChanged;
         }
 
-        private void ItemState_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        private void ItemState_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             if (e.PropertyName != "Timestamp")
                 this._Timestamp = DateTimeOffset.Now;
