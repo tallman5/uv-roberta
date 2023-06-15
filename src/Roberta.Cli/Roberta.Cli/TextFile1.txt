@@ -1,0 +1,251 @@
+﻿        //channels[0] = ((frame[1] | frame[2] << 8) & 0x07FF);
+        //channels[1] = ((frame[2] >> 3 | frame[3] << 5) & 0x07FF);
+        //channels[2] = ((frame[3] >> 6 | frame[4] << 2 | frame[5] << 10) & 0x07FF);
+        //channels[3] = ((frame[5] >> 1 | frame[6] << 7) & 0x07FF);
+        //channels[4] = ((frame[6] >> 4 | frame[7] << 4) & 0x07FF);
+        //channels[5] = ((frame[7] >> 7 | frame[8] << 1 | frame[9] << 9) & 0x07FF);
+        //channels[6] = ((frame[9] >> 2 | frame[10] << 6) & 0x07FF);
+        //channels[7] = ((frame[10] >> 5 | frame[11] << 3) & 0x07FF);
+        //channels[8] = ((frame[12] | frame[13] << 8) & 0x07FF);
+        //channels[9] = ((frame[13] >> 3 | frame[14] << 5) & 0x07FF);
+        //channels[10] = ((frame[14] >> 6 | frame[15] << 2 | frame[16] << 10) & 0x07FF);
+        //channels[11] = ((frame[16] >> 1 | frame[17] << 7) & 0x07FF);
+        //channels[12] = ((frame[17] >> 4 | frame[18] << 4) & 0x07FF);
+        //channels[13] = ((frame[18] >> 7 | frame[19] << 1 | frame[20] << 9) & 0x07FF);
+        //channels[14] = ((frame[20] >> 2 | frame[21] << 6) & 0x07FF);
+        //channels[15] = ((frame[21] >> 5 | frame[22] << 3) & 0x07FF);
+        //channels[16] = ((frame[23]) & 0x0001) ? 2047 : 0;
+        //channels[17] = ((frame[23] >> 1) & 0x0001) ? 2047 : 0;
+
+
+
+
+
+using System.IO.Ports;
+
+namespace Roberta.Cli
+{
+    class Program
+    {
+        static int SBUS_PACKET_SIZE = 25;
+        static int SBUS_SYNC_BYTE = 0x0F;
+        static int SBUS_START_BYTE = 0x0F;
+        static int SBUS_END_BYTE = 0x00;
+        static int SBUS_NUM_CHANNELS = 16;
+        static int SBUS_PIN = 15;
+
+        static byte[] frame = new byte[25];
+
+        static void Main()
+        {
+            using SerialPort serialPort = new SerialPort()
+            {
+                BaudRate = 115200,
+                DataBits = 8,
+                DtrEnable = false,
+                //NewLine = (0x00).ToString(),
+                //Parity = Parity.Even,
+                PortName = "/dev/serial0",
+                RtsEnable = false,
+                StopBits = StopBits.One,
+            };
+
+            serialPort.Open();
+            serialPort.DataReceived += SerialPort_DataReceived;
+
+            Console.Read();
+
+            serialPort.Close();
+            serialPort.Dispose();
+
+            Console.WriteLine();
+            Console.WriteLine();
+        }
+
+        private static void SerialPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
+        {
+            if (sender is not SerialPort port) return;
+
+            var bytesToRead = port.BytesToRead;
+            byte[] buffer = new byte[bytesToRead];
+            port.Read(buffer, 0, bytesToRead);
+
+            for (int i = 0; i < bytesToRead; i++)
+            {
+                Console.ForegroundColor = ConsoleColor.White;
+                if (buffer[i] == 0F) Console.ForegroundColor = ConsoleColor.Green;
+                if (buffer[i] == 00) Console.ForegroundColor = ConsoleColor.Red;
+                Console.Write($"{buffer[i]:X2} ");
+            }
+        }
+    }
+}
+
+
+
+            //// Verify the packet
+            //if (sbusData[0] == SBUS_SYNC_BYTE && sbusData[24] == SBUS_END_BYTE)
+            //{
+            //    // Decode the SBUS packet
+            //    int[] channels = new int[SBUS_NUM_CHANNELS];
+            //    channels[0] = (sbusData[1] | sbusData[2] << 8) & 0x07FF;
+            //    channels[1] = (sbusData[2] >> 3 | sbusData[3] << 5) & 0x07FF;
+            //    // ... decode other channels as needed
+
+            //    // Print the decoded channel values
+            //    for (int i = 0; i < SBUS_NUM_CHANNELS; i++)
+            //    {
+            //        Console.WriteLine("Channel {0}: {1}", i + 1, channels[i]);
+            //    }
+            //}
+            //else
+            //{
+            //    Console.WriteLine("Invalid SBUS packet received");
+            //}
+
+
+
+            
+            // Read the SBUS packet
+            byte[] sbusData = new byte[SBUS_PACKET_SIZE];
+            for (int i = 0; i < SBUS_PACKET_SIZE; i++)
+            {
+                sbusData[i] = 0;
+                for (int j = 0; j < 8; j++)
+                {
+                    if (!gpioController.IsPinOpen(SBUS_PIN)) return;
+
+                    while (gpioController.Read(SBUS_PIN) == PinValue.Low) ;
+                    Thread.Sleep(10);
+                    sbusData[i] |= (byte)((gpioController.Read(SBUS_PIN) == PinValue.High ? 1 : 0) << (7 - j));
+                    while (gpioController.Read(SBUS_PIN) == PinValue.High) ;
+                }
+            }
+
+            for (int i = 0; i < sbusData.Length; i++)
+            {
+                Console.Write($"{sbusData[i]:X2}");
+            }
+            Console.WriteLine();
+
+
+
+
+Connecting to a web socket
+
+using System.Net.WebSockets;
+using System.Text;
+
+namespace Roberta.Cli
+{
+    class Program
+    {
+        static async Task Main(string[] args)
+        {
+            ClientWebSocket webSocket = new ClientWebSocket();
+            Uri serverUri = new Uri("ws://roberta:8765"); // Replace with the actual IP address of your Raspberry Pi
+
+            try
+            {
+                await webSocket.ConnectAsync(serverUri, CancellationToken.None);
+                Console.WriteLine("Connected to the WebSocket server!");
+
+                // Start a background task to continuously receive messages from the server
+                _ = Task.Run(async () => await ReceiveMessages(webSocket));
+
+                // Send event messages to the server
+                await SendEvent(webSocket, "event1");
+                await SendEvent(webSocket, "event2");
+                await SendEvent(webSocket, "unknown_event");
+
+                Console.WriteLine("Events sent to the server. Press Enter to exit.");
+                Console.ReadLine();
+
+                // Close the WebSocket connection
+                await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client closing", CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"WebSocket error: {ex.Message}");
+            }
+        }
+
+        static async Task ReceiveMessages(ClientWebSocket webSocket)
+        {
+            byte[] buffer = new byte[1024];
+
+            while (webSocket.State == WebSocketState.Open)
+            {
+                WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+
+                if (result.MessageType == WebSocketMessageType.Text)
+                {
+                    string message = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                    Console.WriteLine($"Received message: {message}");
+                }
+            }
+        }
+
+        static async Task SendEvent(ClientWebSocket webSocket, string eventName)
+        {
+            byte[] buffer = Encoding.UTF8.GetBytes(eventName);
+            await webSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None);
+            Console.WriteLine($"Sent event: {eventName}");
+        }
+    }
+}
+
+
+
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
+
+public class Program
+{
+    private const string Hostname = "2600:4040:71cf:1100:81bc:f4a9:f6bb:946c";
+    private const int Port = 8888;
+    private const int Pin = 15;
+    private const int BaudRate = 100000;
+
+    public static void Main()
+    {
+
+        try
+        {
+            //IPHostEntry ipHostInfo = Dns.GetHostEntryAsync(Hostname).Result;
+            //IPAddress ipAddress = ipHostInfo.AddressList[0];
+            //IPEndPoint ipEndPoint = new(ipAddress, Port);
+
+            using Socket client = new(SocketType.Stream, ProtocolType.Tcp);
+
+            client.Connect(IPAddress.Parse("2600:4040:71cf:1100:81bc:f4a9:f6bb:946c"), 8888);
+
+            // Configure UART and start reading
+            var command = $"pigs slro {Pin} {BaudRate} 8";
+            var commandBytes = Encoding.UTF8.GetBytes(command);
+            var rv = client.Send(commandBytes);
+            Console.WriteLine($"Response: {rv}");
+
+            while (true)
+            {
+                var buffer = new byte[1024];
+
+                var received = client.Receive(buffer, SocketFlags.None);
+                var response = Encoding.UTF8.GetString(buffer, 0, received);
+                Console.WriteLine(response);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
+    }
+
+    private static void SendCommand(NetworkStream stream, string command)
+    {
+        byte[] buffer = Encoding.ASCII.GetBytes(command + "\n");
+        stream.Write(buffer, 0, buffer.Length);
+        stream.Flush();
+    }
+}

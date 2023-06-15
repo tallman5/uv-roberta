@@ -1,5 +1,4 @@
 ﻿using Roberta.Io;
-using System.IO.Ports;
 
 namespace Roberta.Cli
 {

@@ -9,6 +9,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Program.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Device.Gpio" Version="2.2.0" />
+    <PackageReference Include="System.IO.Ports" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\Roberta\Roberta\Roberta.csproj" />
   </ItemGroup>
 
