@@ -1,29 +1,34 @@
 import serial
-import time
 
 BAUD_RATE = 4800
 
-class Connection:
+def check_string_encoding(text):
+    try:
+        text.decode('utf-8')
+    except UnicodeDecodeError:
+        return False
+    return True
+
+class Reader:
     def __init__(self, port):
-        self.lastLine = ''
         self.port = port
-        self.isOpen = False
     
     def open(self):
         self.ser = serial.Serial(self.port, BAUD_RATE)
-        self.isOpen = True
 
-        while (self.isOpen == True):
-            try:
-                self.lastLine = self.ser.readline().decode('utf-8').strip()
-                time.sleep(.1)
-            except:
-                self.lastLine = '' 
+    def read(self):
+        if hasattr(self, 'ser'):
+            if self.ser.closed == True: return 'GPS connection is closed, did you call Reader.open()?'
 
-        self.ser.close()
-
-    def lastLine(self):
-        return self.lastLine
+            line = self.ser.readline()
+            if check_string_encoding(line):
+                decodedLine = line.decode('utf-8').strip()
+                return decodedLine
+            
+            return line
+        return 'GPS not initialized, did you call Reader.open()?'
     
     def close(self):
-        self.isOpen = False
+        if hasattr(self, 'ser'):
+            if self.ser.closed == False:
+                self.ser.close()

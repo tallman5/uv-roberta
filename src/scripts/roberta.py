@@ -1,28 +1,20 @@
+import gps
 import os
 import read_sbus_from_GPIO
-import serial
+import roboteq
 import sys
 import time
 
 GPS_PORT = '/dev/serial/by-id/usb-Prolific_Technology_Inc._USB-Serial_Controller_D-if00-port0'
 ROBOTEQ_PORT = '/dev/serial/by-id/usb-Roboteq_Motor_Controller_MDC2XXX-if00'
-SBUS_PIN = 4
-
-def check_string_encoding(text):
-    try:
-        text.decode('utf-8')
-    except UnicodeDecodeError:
-        return False
-    return True
+RX_PIN = 4
 
 def clean_up():
-    print()
-    print()
-    print()
-    print()
+    move_cursor(10, 0)
     print('Closing connections...')
-    reader.end_listen()
-    # gpsConnection.close()
+    time.sleep(.1)
+    gpsReader.close()
+    rxReader.end_listen()
     roboteqConnection.close()
 
 def clear_console():
@@ -32,70 +24,66 @@ def move_cursor(row, col):
     sys.stdout.write('\033[{};{}H'.format(row, col))
     sys.stdout.flush()
 
-# def read_gps():
-#         if (gpsConnection.closed == True): return
+def read_gps():
+    line = gpsReader.read()
+    if line.startswith('$GPGGA'):
+        # Split the line into individual fields
+        fields = line.split(',')
 
-#         line = gpsConnection.readline()
-#         if check_string_encoding(line):
-#             decodedLine = line.decode('utf-8').strip()
+        # Print the GPS information
+        print('-----------------------------------')
+        print(f'  GPS Time: {fields[1]}            ')
+        print(f'  Latitude: {fields[2]}            ')
+        print(f' Longitude: {fields[4]}            ')
 
-#             # Check if the line contains GPS data
-#             if decodedLine.startswith('$GPGGA'):
-#                 # Split the line into individual fields
-#                 fields = decodedLine.split(',')
-
-#                 move_cursor(0, 0)
-#                 # Print the GPS information
-#                 print('Time:', fields[1])
-#                 print('Latitude:', fields[2])
-#                 print('Longitude:', fields[4])
+    move_cursor(10, 0)
 
 def read_sbus():
-    channel_data = reader.translate_latest_packet()
-    move_cursor(4, 0)
+    move_cursor(0, 0)
+
+    channel_data = rxReader.translate_latest_packet()
+    channels_to_watch = [0,1,8,9]
+    for i in channels_to_watch:
+        print(f'Channel {(i+1):0>2}: {channel_data[i]}             ')
 
     armed = False
     if (channel_data[8] > 1000): armed = True
+    print(f'     Armed: {armed}               ')
 
-    print('Channel 1:', channel_data[0])
-    print('Channel 2:', channel_data[1])
-    print('Channel 9:', channel_data[8])
-    print('Armed:    ', armed)
-
+    multiplier = .33
+    if channel_data[9] > 600: multiplier = .66
+    if channel_data[9] > 1200: multiplier = 1
+    print(f'Multiplier: {multiplier}               ')
+    
     if (armed == True):
-        powerCommand = f'!M {channel_data[1]-1000} {(channel_data[0]-1000)*-1}'
-        print(f'{powerCommand}               ')
-        write_roboteq(powerCommand)
+        powerCommand = f'!M {(channel_data[1]-1000) * multiplier} {(channel_data[0]-1000) * multiplier}'
+        roboteqConnection.write(powerCommand)
 
-def write_roboteq(line):
-    newLine = line + ' \r'
-    roboteqConnection.write(newLine.encode())
-
-reader = read_sbus_from_GPIO.SbusReader(SBUS_PIN)
-reader.begin_listen()
-while(not reader.is_connected()):
+rxReader = read_sbus_from_GPIO.SbusReader(RX_PIN)
+rxReader.begin_listen()
+print('Waiting for RX connection...')
+while(not rxReader.is_connected()):
     time.sleep(.2)
 time.sleep(.1)
 
-# gpsConnection = serial.Serial(GPS_PORT, 4800)
-roboteqConnection = serial.Serial(
-    port = '/dev/serial/by-id/usb-Roboteq_Motor_Controller_MDC2XXX-if00',
-    baudrate = 9600,
-    parity = serial.PARITY_NONE,
-    stopbits = serial.STOPBITS_ONE,
-    bytesize = serial.EIGHTBITS,
-    timeout = 1
-)
-write_roboteq('^ECHOF 1')
-write_roboteq('^MXMD 1')
+print('Waiting for GPS connection...')
+gpsReader = gps.Reader(GPS_PORT)
+gpsReader.open()
+line = gpsReader.read()
+while line[0] != '$':
+    line = gpsReader.read()
+    time.sleep(.2)
+
+roboteqConnection = roboteq.Connection(ROBOTEQ_PORT)
+roboteqConnection.open()
 
 clear_console()
-    
+
 while True:
     try:
-        # read_gps()
         read_sbus()
-
+        # read_gps()
+        time.sleep(.01)
     except KeyboardInterrupt:
         clean_up()
         exit()
