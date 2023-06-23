@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "Roberta.Cli": {
-      "commandName": "Project",
-      "commandLineArgs": "-g"
-    }
-  }
-}

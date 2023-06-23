@@ -11,6 +11,7 @@ namespace Roberta.Io
     {
         public ItemState()
         {
+            this._IsReady = false;
             this._Timestamp = DateTime.Now;
             this.PropertyChanged += ItemState_PropertyChanged;
         }
@@ -21,12 +22,27 @@ namespace Roberta.Io
                 this._Timestamp = DateTimeOffset.Now;
         }
 
+        private bool _IsReady;
+        [DataMember]
+        public virtual bool IsReady
+        {
+            get { return this._IsReady; }
+            internal set
+            {
+                if (this._IsReady != value)
+                {
+                    this._IsReady = value;
+                    RaisePropertyChanged(nameof(IsReady));
+                }
+            }
+        }
+
         private DateTimeOffset _Timestamp;
         [DataMember]
         public virtual DateTimeOffset Timestamp
         {
             get { return this._Timestamp; }
-            set
+            internal set
             {
                 if (this._Timestamp != value)
                 {

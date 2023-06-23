@@ -1,10 +1,5 @@
 ﻿using Roberta.ComponentModel;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.Serialization;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Roberta.Io
 {
@@ -31,7 +26,7 @@ namespace Roberta.Io
                 if (value != this._DangerLevel)
                 {
                     this._DangerLevel = value;
-                    this.RaisePropertyChanged("DangerLevel");
+                    this.RaisePropertyChanged(nameof(DangerLevel));
                 }
             }
         }
@@ -49,7 +44,7 @@ namespace Roberta.Io
                 if (value != this._MaxVoltage)
                 {
                     this._MaxVoltage = value;
-                    this.RaisePropertyChanged("MaxVoltage");
+                    this.RaisePropertyChanged(nameof(MaxVoltage));
                 }
             }
         }
@@ -67,7 +62,7 @@ namespace Roberta.Io
                 if (value != this._MinVoltage)
                 {
                     this._MinVoltage = value;
-                    this.RaisePropertyChanged("MinVoltage");
+                    this.RaisePropertyChanged(nameof(MinVoltage));
                 }
             }
         }
@@ -86,7 +81,7 @@ namespace Roberta.Io
                 if (value != this._Percent)
                 {
                     this._Percent = value;
-                    this.RaisePropertyChanged("Percent");
+                    this.RaisePropertyChanged(nameof(Percent));
                 }
             }
         }
@@ -107,7 +102,7 @@ namespace Roberta.Io
                     this._MaxVoltage = value * DEF_BATT_SCALE;
                     this._MinVoltage = value / DEF_BATT_SCALE;
                     this._DangerLevel = this.MinVoltage * (DEF_BATT_SCALE / 2);
-                    RaisePropertyChanged("SystemVolts");
+                    RaisePropertyChanged(nameof(SystemVolts));
                 }
             }
         }
@@ -125,7 +120,7 @@ namespace Roberta.Io
                 if (value != this._Volts)
                 {
                     this._Volts = value;
-                    RaisePropertyChanged("Volts");
+                    RaisePropertyChanged(nameof(Volts));
                 }
             }
         }

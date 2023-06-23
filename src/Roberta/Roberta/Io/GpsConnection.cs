@@ -1,15 +1,8 @@
-﻿using Roberta.ComponentModel;
-using System;
-using System.Collections.Generic;
-using System.IO.Ports;
-using System.Linq;
-using System.Runtime.Serialization;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.IO.Ports;
 
 namespace Roberta.Io
 {
-    public class GpsConnection : IDisposable
+    public class GpsConnection : IConnection
     {
         public void Close()
         {
@@ -139,6 +132,12 @@ namespace Roberta.Io
         }
 
         public GpsState GpsState { get; private set; }
+
+        private bool _IsOpen;
+        public bool IsOpen
+        {
+            get { return _IsOpen; }
+        }
 
         readonly SerialPort _SerialPort;
 

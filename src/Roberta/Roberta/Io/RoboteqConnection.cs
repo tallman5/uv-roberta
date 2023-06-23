@@ -11,10 +11,8 @@ using System.Threading.Tasks;
 
 namespace Roberta.Io
 {
-    public class RoboteqConnection : ItemState, IDisposable
+    public class RoboteqConnection : Item, IConnection
     {
-        private bool _IsOpen;
- 
         private readonly SerialPort _RoboteqPort;
         public  SerialPort RoboteqPort { get { return _RoboteqPort;} }
 
@@ -60,6 +58,12 @@ namespace Roberta.Io
             Send(_CommandLine);
         }
         public Command ExecuteCommandCommand { get; private set; }
+
+        private bool _IsOpen;
+        public bool IsOpen
+        {
+            get { return _IsOpen; }
+        }
 
         public virtual void Open()
         {
