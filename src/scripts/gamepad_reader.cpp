@@ -58,15 +58,6 @@ int main()
         {
             std::cout << "Channel " << event.code << ": " << event.value << "        " << std::endl;
         }
-
-        // if (ev.type == EV_KEY)
-        // {
-        //     std::cout << "Button " << ev.code << " " << (ev.value ? "pressed" : "released") << std::endl;
-        // }
-        // else if (ev.type == EV_ABS)
-        // {
-        //     std::cout << "Axis " << ev.code << " value " << ev.value << std::endl;
-        // }
     }
 
     close(fd);

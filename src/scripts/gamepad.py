@@ -1,19 +1,49 @@
-import evdev
+import os
+import struct
+import sys
 
-# Define the event device path
-event_device = '/dev/input/by-id/usb-FrSky_FrSky_Simulator_4995316A3546-event-joystick'  # Replace with the actual device path
+TIMESTAMP = 0
+VALUE = 1
+CODE = 2
+CHANNEL = 3
 
-# Create an InputDevice object
-gamepad = evdev.InputDevice(event_device)
+# Replace '/dev/input/js0' with the appropriate path to your gamepad
+gamepad_file = open('/dev/input/js0', 'rb')
 
-# Read input events from the gamepad
-for event in gamepad.read_loop():
-    if event.type == evdev.ecodes.EV_KEY:
-        # Button event
-        key_event = evdev.categorize(event)
-        print(f"Button {key_event.keycode} {'pressed' if key_event.keystate == 1 else 'released'}")
+event_format = 'IhBB'  # Event structure format
+event_size = struct.calcsize(event_format)
 
-    elif event.type == evdev.ecodes.EV_ABS:
-        # Axis event
-        axis_event = evdev.categorize(event)
-        print(f"Axis {axis_event.event.code} value: {axis_event.event.value}")
+def clear_console():
+    os.system('cls' if os.name == 'nt' else 'clear')
+
+def move_cursor(row, col):
+    sys.stdout.write('\033[{};{}H'.format(row, col))
+    sys.stdout.flush()
+
+clear_console()
+
+# Read gamepad events
+while True:
+    try:
+        event_data = gamepad_file.read(event_size)
+        event = struct.unpack(event_format, event_data)
+
+        move_cursor(0, 0)
+
+        try:
+            print(f'{event_data}                      ')
+        except:
+            print("Cannot decode")
+
+        print(f'{event}                                    ')
+
+        if (event[CHANNEL] < 7):
+            move_cursor(event[CHANNEL] + 3, 0)
+            print(f'Channel {event[CHANNEL] + 1}: {event[VALUE] / 255}               ')
+
+    except KeyboardInterrupt:
+        move_cursor(11, 0)
+        print()
+        exit()
+    except:
+        raise

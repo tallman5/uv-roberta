@@ -106,7 +106,6 @@ def device_test(reader):
         return
         
 
-#SBUS connected to pin 4
 DATA_PIN = 4
 
 if __name__=="__main__":

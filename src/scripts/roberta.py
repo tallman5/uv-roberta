@@ -5,7 +5,7 @@ import roboteq
 import sys
 import time
 
-GPS_PORT = '/dev/serial/by-id/usb-Prolific_Technology_Inc._USB-Serial_Controller_D-if00-port0'
+# GPS_PORT = '/dev/serial/by-id/usb-Prolific_Technology_Inc._USB-Serial_Controller_D-if00-port0'
 ROBOTEQ_PORT = '/dev/serial/by-id/usb-Roboteq_Motor_Controller_MDC2XXX-if00'
 RX_PIN = 4
 
@@ -13,7 +13,7 @@ def clean_up():
     move_cursor(10, 0)
     print('Closing connections...')
     time.sleep(.1)
-    gpsReader.close()
+    # gpsReader.close()
     rxReader.end_listen()
     roboteqConnection.close()
 
@@ -24,19 +24,19 @@ def move_cursor(row, col):
     sys.stdout.write('\033[{};{}H'.format(row, col))
     sys.stdout.flush()
 
-def read_gps():
-    line = gpsReader.read()
-    if line.startswith('$GPGGA'):
-        # Split the line into individual fields
-        fields = line.split(',')
+# def read_gps():
+#     line = gpsReader.read()
+#     if line.startswith('$GPGGA'):
+#         # Split the line into individual fields
+#         fields = line.split(',')
 
-        # Print the GPS information
-        print('-----------------------------------')
-        print(f'  GPS Time: {fields[1]}            ')
-        print(f'  Latitude: {fields[2]}            ')
-        print(f' Longitude: {fields[4]}            ')
+#         # Print the GPS information
+#         print('-----------------------------------')
+#         print(f'  GPS Time: {fields[1]}            ')
+#         print(f'  Latitude: {fields[2]}            ')
+#         print(f' Longitude: {fields[4]}            ')
 
-    move_cursor(10, 0)
+#     move_cursor(10, 0)
 
 def read_sbus():
     move_cursor(0, 0)
@@ -56,7 +56,7 @@ def read_sbus():
     print(f'Multiplier: {multiplier}               ')
     
     if (armed == True):
-        powerCommand = f'!M {(channel_data[1]-1000) * multiplier} {(channel_data[0]-1000) * multiplier}'
+        powerCommand = f'!M {(channel_data[1]-1000) * multiplier} {((channel_data[0]-1000) * multiplier)*-1}'
         roboteqConnection.write(powerCommand)
 
 rxReader = read_sbus_from_GPIO.SbusReader(RX_PIN)
@@ -66,13 +66,13 @@ while(not rxReader.is_connected()):
     time.sleep(.2)
 time.sleep(.1)
 
-print('Waiting for GPS connection...')
-gpsReader = gps.Reader(GPS_PORT)
-gpsReader.open()
-line = gpsReader.read()
-while line[0] != '$':
-    line = gpsReader.read()
-    time.sleep(.2)
+# print('Waiting for GPS connection...')
+# gpsReader = gps.Reader(GPS_PORT)
+# gpsReader.open()
+# line = gpsReader.read()
+# while line[0] != '$':
+#     line = gpsReader.read()
+#     time.sleep(.2)
 
 roboteqConnection = roboteq.Connection(ROBOTEQ_PORT)
 roboteqConnection.open()

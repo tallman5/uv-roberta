@@ -1,4 +1,61 @@
-﻿        //channels[0] = ((frame[1] | frame[2] << 8) & 0x07FF);
+﻿namespace Roberta.Cli
+{
+    class Program
+    {
+        private static bool listening = true;
+
+        static void Main(string[] args)
+        {
+            Console.Clear();
+            int channels = 7;
+            int[] channelVals = new int[channels];
+            byte[] buffer = new byte[8];
+
+            var gamepadDevicePath = "/dev/input/js0";
+            if (gamepadDevicePath == null)
+            {
+                Console.WriteLine("Gamepad not found.");
+                return;
+            }
+
+            Console.WriteLine($"IsLittleEndian: {BitConverter.IsLittleEndian}");
+            using var gamepadStream = new FileStream(gamepadDevicePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+
+            while (listening)
+            {
+                gamepadStream.Read(buffer, 0, buffer.Length);
+
+                Console.SetCursorPosition(0, 1);
+                for (var i = 0; i < buffer.Length; i++)
+                    Console.Write($"{buffer[i]:X2} ");
+                Console.WriteLine();
+
+                var time = BitConverter.ToUInt32(buffer, 0);
+                var value = BitConverter.ToInt16(buffer, 4);
+                var type = buffer[6];
+                var number = buffer[7];
+                Console.WriteLine($"{time} {value} {type} {number}");
+
+                if (number < channels)
+                {
+                    channelVals[number] = value;
+                    Console.SetCursorPosition(0, number + 3);
+                    Console.WriteLine($"Channel {number + 1}: {value / 256}                  ");
+                }
+
+                Thread.Sleep(1); // Delay between readings
+            }
+
+            //Console.SetCursorPosition(0, 10);
+            //Console.WriteLine("Closing...");
+            //gamepadStream.Close();
+            //gamepadStream.Dispose();
+        }
+    }
+}
+
+
+        //channels[0] = ((frame[1] | frame[2] << 8) & 0x07FF);
         //channels[1] = ((frame[2] >> 3 | frame[3] << 5) & 0x07FF);
         //channels[2] = ((frame[3] >> 6 | frame[4] << 2 | frame[5] << 10) & 0x07FF);
         //channels[3] = ((frame[5] >> 1 | frame[6] << 7) & 0x07FF);
