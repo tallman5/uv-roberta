@@ -1,27 +1,30 @@
 ﻿using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.Reflection;
 using System.Runtime.Serialization;
 
 namespace Roberta.Io
 {
+    public enum PilotMode
+    {
+        Transmitter, Mission, Other
+    }
 
     public class RxState : ItemState
     {
+        private const int CHANNELS = 7;
+
         public RxState()
         {
-            this.ChannelValues = new ObservableCollection<int> { 0, 0, 0, 0, 0, 0, 0 };
+            this.ChannelValues = new ObservableCollection<int>();
+            for (int i = 0; i < CHANNELS; i++)
+                this.ChannelValues.Add(0);
             this.ChannelValues.CollectionChanged += ChannelValues_CollectionChanged;
         }
 
         private void ChannelValues_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             RaisePropertyChanged();
-            //Console.WriteLine(e?.Action);
-            //Console.WriteLine(e?.NewItems?.Count);
-            //Console.WriteLine(e?.NewStartingIndex);
-            //Console.WriteLine(e?.OldItems?.Count);
-            //Console.WriteLine(e?.OldStartingIndex);
+            if (ChannelValues.Count != CHANNELS) throw new InvalidOperationException($"Channel values must contain exactly {CHANNELS} items.");
         }
 
         public ObservableCollection<int> ChannelValues { get; private set; }
@@ -69,31 +72,24 @@ namespace Roberta.Io
         }
 
         [DataMember]
-        public bool InFailsafe
+        public bool IsArmed
         {
             get
             {
-                bool returnValue = true;
-                foreach (var cv in ChannelValues)
-                {
-                    if (cv != 0)
-                    {
-                        returnValue = false;
-                        break;
-                    }
-                }
+                if (!IsReady) return false;
+                bool returnValue = (ChannelValues[4] > 1600) ? true : false;
                 return returnValue;
             }
         }
 
         [DataMember]
-        public bool IsArmed
+        public PilotMode PilotMode
         {
             get
             {
-                bool returnValue = false;
-                if (ChannelValues[4] > 1800) returnValue = true;
-
+                PilotMode returnValue = PilotMode.Transmitter;
+                if (ChannelValues[5] > -20000) returnValue = PilotMode.Mission;
+                if (ChannelValues[5] > 20000) returnValue = PilotMode.Other;
                 return returnValue;
             }
         }

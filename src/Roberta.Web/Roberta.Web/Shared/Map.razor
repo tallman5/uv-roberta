@@ -1,0 +1,56 @@
+﻿@page "/map"
+@using Microsoft.AspNetCore.Http.Connections.Client
+@using Roberta.Io
+@using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.Extensions.Configuration
+@implements IDisposable
+@inject IConfiguration Configuration
+@inject NavigationManager Navigation
+@inject IJSRuntime jsRuntime
+
+<div id="mapDiv" class="dash-cover"></div>
+
+@code {
+    private HubConnection? hubConnection;
+    private HttpClientHandler? handler;
+
+    protected override async Task OnInitializedAsync()
+    {
+        handler = new HttpClientHandler
+            {
+#if DEBUG
+                // Ignore certificate validation errors
+                ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true
+#endif
+            };
+
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/robertaHub"), options =>
+            {
+                options.HttpMessageHandlerFactory = _ => handler;
+            })
+            .WithAutomaticReconnect()
+            .Build();
+
+        hubConnection.On<GpsMixerState>("GpsMixerStateUpdated", gpsMixerState =>
+        {
+            jsRuntime.InvokeVoidAsync("dashboardMap.updateRobertaLocation", gpsMixerState);
+        });
+
+        await hubConnection.StartAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var apiKey = Configuration.GetSection("BingMapsApiKey").Value;
+            await jsRuntime.InvokeVoidAsync("dashboardMap.initializeMap", "mapDiv", apiKey);
+        }
+    }
+
+    public void Dispose()
+    {
+        hubConnection?.DisposeAsync().AsTask().Wait();
+    }
+}

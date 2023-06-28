@@ -1,63 +1,29 @@
-﻿using Roberta.ComponentModel;
-using Roberta.Win.Input;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.IO.Ports;
-using System.Linq;
-using System.Runtime.Serialization;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.IO.Ports;
 
 namespace Roberta.Io
 {
-    public class RoboteqConnection : Item, IConnection
+    public class RoboteqConnection : IConnection
     {
         private readonly SerialPort _RoboteqPort;
-        public  SerialPort RoboteqPort { get { return _RoboteqPort;} }
+        private readonly RoboteqState _RoboteqState;
 
         public virtual void Close()
         {
-            if (_IsOpen)
-            {
+            _IsOpen = false;
+            _RoboteqState.IsReady = false;
+            _RoboteqPort.DataReceived -= RoboteqPort_DataReceived;
+            if (_RoboteqPort.IsOpen)
                 _RoboteqPort.Close();
-                _IsOpen = false;
-                CloseCommand.CanExecute = false;
-                OpenCommand.CanExecute = true;
-            }
         }
-        public Command CloseCommand { get; private set; }
 
-        private string _CommandLine;
-        [DataMember]
-        public virtual string CommandLine
-        {
-            get { return this._CommandLine; }
-            set
-            {
-                if (value != this._CommandLine)
-                {
-                    this._CommandLine = value;
-                    this.RaisePropertyChanged(nameof(CommandLine));
-                }
-            }
-        }
+        private readonly string _ConnectionString;
+        public string ConnectionString { get { return _ConnectionString; } }
 
         public void Dispose()
         {
-            if (null != _RoboteqPort)
-            {
-                if (_RoboteqPort.IsOpen)
-                    _RoboteqPort.Close();
-                _RoboteqPort.Dispose();
-            }
+            Close();
+            _RoboteqPort?.Dispose();
         }
-
-        public virtual void ExecuteCommand()
-        {
-            Send(_CommandLine);
-        }
-        public Command ExecuteCommandCommand { get; private set; }
 
         private bool _IsOpen;
         public bool IsOpen
@@ -68,34 +34,43 @@ namespace Roberta.Io
         public virtual void Open()
         {
             if (!_IsOpen)
+                Task.Run(ReadData);
+        }
+
+        private void ReadData()
+        {
+            _IsOpen = _RoboteqState.IsReady = false;
+            while (_IsOpen == false)
             {
-                _RoboteqPort.Open();
-                Send("^ECHOF 1");
-                Send("~MXMD");                      // Query Mix Mode
-                Send("?A");                         // Motor amps by channel
-                Send("?A");                         // repeating first one, sometimes first query doesn't work
-                Send("?BA");                        // Battery amps by channel
-                Send("?M");                         // Motor Command Applied
-                Send("?T");                         // Temperature
-                Send("?V");                         // Volts
-                Send("^MXMD 0");                    // Turn off mixing
-                Send(string.Format("# {0}", 200));  // polling interval milliseconds
-                Send("~MXMD");                      // Query Mix Mode
-                _IsOpen = true;
-                CloseCommand.CanExecute = true;
-                OpenCommand.CanExecute = false;
+                try
+                {
+                    _RoboteqPort.Open();
+                    Send("^ECHOF 1");                   // Echo off
+                    Send("~MXMD");                      // Query Mix Mode
+                    Send("?A");                         // Motor amps by channel
+                    Send("?A");                         // repeating first one, sometimes first query doesn't work
+                    Send("?BA");                        // Battery amps by channel
+                    Send("?M");                         // Motor Command Applied
+                    Send("?T");                         // Temperature
+                    Send("?V");                         // Volts
+                    Send("^MXMD 0");                    // Turn off mixing
+                    Send(string.Format("# {0}", 200));  // polling interval milliseconds
+                    Send("~MXMD");                      // Query Mix Mode
+
+                    _RoboteqPort.DataReceived += RoboteqPort_DataReceived;
+                    _IsOpen = _RoboteqState.IsReady = true;
+                }
+                catch
+                {
+                    Thread.Sleep(5000);
+                }
             }
         }
-        public Command OpenCommand { get; private set; }
 
-        public RoboteqConnection(string portName, RoboteqState roboteqState) 
+        public RoboteqConnection(string connectionString, RoboteqState roboteqState)
         {
-            _CommandLine = "";
             _IsOpen = false;
-
-            _PortName = portName;
-            _RoboteqState = roboteqState;
-
+            _ConnectionString = connectionString;
             _RoboteqPort = new SerialPort
             {
                 BaudRate = 9600,
@@ -105,20 +80,16 @@ namespace Roberta.Io
                 Handshake = Handshake.None,
                 NewLine = "\r",
                 Parity = Parity.Even,
-                PortName = _PortName,
+                PortName = _ConnectionString,
                 ReadTimeout = 200,
                 RtsEnable = true,
                 StopBits = StopBits.One,
                 WriteTimeout = 200
             };
-            _RoboteqPort.DataReceived += _RoboteqPort_DataReceived;
-
-            CloseCommand = new Command(Close, false);
-            ExecuteCommandCommand = new Command(ExecuteCommand, true);
-            OpenCommand = new Command(Open, true);
+            _RoboteqState = roboteqState;
         }
 
-        private void _RoboteqPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
+        private void RoboteqPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
             string newLine;
             try
@@ -189,36 +160,6 @@ namespace Roberta.Io
                     var battVolts = tempDecimal / 10;
                     _RoboteqState.BatteryState.Volts = battVolts;
                     _RoboteqState.BatteryState.Percent = (int)(((battVolts - _RoboteqState.BatteryState.MinVoltage) / (_RoboteqState.BatteryState.MaxVoltage - _RoboteqState.BatteryState.MinVoltage)) * 100);
-                }
-            }
-        }
-
-        private string _PortName;
-        [DataMember]
-        public virtual string PortName
-        {
-            get { return this._PortName; }
-            set
-            {
-                if (value != this._PortName)
-                {
-                    this._PortName = value;
-                    this.RaisePropertyChanged(nameof(PortName));
-                }
-            }
-        }
-
-        private RoboteqState _RoboteqState;
-        [DataMember]
-        public virtual RoboteqState RoboteqState
-        {
-            get { return this._RoboteqState; }
-            set
-            {
-                if (value != this._RoboteqState)
-                {
-                    this._RoboteqState = value;
-                    this.RaisePropertyChanged(nameof(RoboteqState));
                 }
             }
         }

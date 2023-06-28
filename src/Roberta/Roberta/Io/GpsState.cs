@@ -6,7 +6,7 @@ namespace Roberta.Io
 {
     public class GpsState : ItemState
     {
-        private double _Heading;
+        protected double _Heading;
         [DataMember]
         public virtual double Heading
         {
@@ -21,7 +21,7 @@ namespace Roberta.Io
             }
         }
 
-        private double _Latitude;
+        protected double _Latitude;
         [DataMember]
         public virtual double Latitude
         {
@@ -36,7 +36,7 @@ namespace Roberta.Io
             }
         }
 
-        private double _Longitude;
+        protected double _Longitude;
         [DataMember]
         public virtual double Longitude
         {
@@ -51,7 +51,7 @@ namespace Roberta.Io
             }
         }
 
-        private double _Speed;
+        protected double _Speed;
         [DataMember]
         public virtual double Speed
         {

@@ -1,28 +1,28 @@
 ﻿using System.IO.Ports;
+using System.Runtime.Serialization;
 
 namespace Roberta.Io
 {
     public class GpsConnection : IConnection
     {
+        private readonly GpsState _GpsState;
+        readonly SerialPort _SerialPort;
+
         public void Close()
         {
-            if (null != _SerialPort)
-            {
-                _SerialPort.DataReceived -= SerialPort_DataReceived;
-                if (_SerialPort.IsOpen)
-                    _SerialPort.Close();
-            }
+            this._IsOpen = _GpsState.IsReady = false;
+            _SerialPort.DataReceived -= SerialPort_DataReceived;
+            if (_SerialPort.IsOpen)
+                _SerialPort.Close();
         }
+
+        private readonly string _ConnectionString;
+        public string ConnectionString { get { return _ConnectionString; } }
 
         public void Dispose()
         {
-            if (null != _SerialPort)
-            {
-                _SerialPort.DataReceived -= SerialPort_DataReceived;
-                if (_SerialPort.IsOpen)
-                    _SerialPort.Close();
-                _SerialPort.Dispose();
-            }
+            Close();
+            _SerialPort?.Dispose();
         }
 
         static public double GetDegrees(string DM, string Dir)
@@ -34,8 +34,8 @@ namespace Roberta.Io
                 if (string.IsNullOrWhiteSpace(DM) || string.IsNullOrWhiteSpace(Dir))
                     return returnValue;
 
-                string t = DM.Substring(DM.IndexOf("."));
-                double FM = double.Parse(DM.Substring(DM.IndexOf(".")));
+                string t = DM[DM.IndexOf(".")..];
+                double FM = double.Parse(DM[DM.IndexOf(".")..]);
 
                 //Get the minutes.
                 t = DM.Substring(DM.IndexOf(".") - 2, 2);
@@ -43,12 +43,12 @@ namespace Roberta.Io
 
                 //Degrees
                 t = DM.Substring(0, DM.IndexOf(".") - 2);
-                returnValue = double.Parse(DM.Substring(0, DM.IndexOf(".") - 2));
+                returnValue = double.Parse(DM[..(DM.IndexOf(".") - 2)]);
 
                 if (Dir == "S" || Dir == "W")
                     returnValue = -(returnValue + (Min + FM) / 60);
                 else
-                    returnValue = returnValue + (Min + FM) / 60;
+                    returnValue += (Min + FM) / 60;
 
                 return returnValue;
             }
@@ -59,17 +59,53 @@ namespace Roberta.Io
             }
         }
 
-        public GpsConnection(string portName, GpsState gpsState)
+        public GpsConnection(string connectionString, GpsState gpsState)
         {
-            GpsState = gpsState;
+            _GpsState = gpsState;
+            _ConnectionString = connectionString;
             _SerialPort = new SerialPort
             {
-                PortName = portName,
+                PortName = connectionString,
                 BaudRate = 4800,
                 Parity = Parity.None,
                 DataBits = 8,
                 StopBits = StopBits.One
             };
+        }
+
+        private bool _IsOpen;
+        public bool IsOpen
+        {
+            get { return _IsOpen; }
+        }
+
+        public void Open()
+        {
+            if (!_IsOpen)
+                Task.Run(ReadData);
+
+            //// Switch from SiRF Binary to NMEA Output
+            //string str = "A0 A2 00 18 81 02 01 01 00 01 01 01 05 01 01 01 00 01 00 01 00 00 00 01 00 00 12 C0 01 65 B0 B3";
+            //byte[] bytes = str.Split(' ').Select(s => Convert.ToByte(s, 16)).ToArray();
+            //_SerialPort.Write(bytes, 0, bytes.Length);
+        }
+
+        private void ReadData()
+        {
+            _IsOpen = _GpsState.IsReady = false;
+            while (_IsOpen == false)
+            {
+                try
+                {
+                    _SerialPort.Open();
+                    _SerialPort.DataReceived += SerialPort_DataReceived;
+                    _IsOpen = _GpsState.IsReady = true;
+                }
+                catch
+                {
+                    Thread.Sleep(5000);
+                }
+            }
         }
 
         private void SerialPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
@@ -109,8 +145,8 @@ namespace Roberta.Io
             switch (fields[0])
             {
                 case "$GPGGA":
-                    GpsState.Latitude = GetDegrees(fields[2], fields[3]);
-                    GpsState.Longitude = GetDegrees(fields[4], fields[5]);
+                    _GpsState.Latitude = GetDegrees(fields[2], fields[3]);
+                    _GpsState.Longitude = GetDegrees(fields[4], fields[5]);
                     break;
                 case "$GPGSA":
                     break;
@@ -119,37 +155,16 @@ namespace Roberta.Io
                 case "$GPRMC":
                     double speed;
                     if (double.TryParse(fields[7], out speed))
-                        GpsState.Speed = speed;
+                        _GpsState.Speed = speed;
                     else
-                        GpsState.Speed = 0;
+                        _GpsState.Speed = 0;
                     double heading;
                     if (double.TryParse(fields[8], out heading))
-                        GpsState.Heading = heading;
+                        _GpsState.Heading = heading;
                     else
-                        GpsState.Heading = 0;
+                        _GpsState.Heading = 0;
                     break;
             }
-        }
-
-        public GpsState GpsState { get; private set; }
-
-        private bool _IsOpen;
-        public bool IsOpen
-        {
-            get { return _IsOpen; }
-        }
-
-        readonly SerialPort _SerialPort;
-
-        public void Open()
-        {
-            _SerialPort.DataReceived += SerialPort_DataReceived;
-            _SerialPort.Open();
-
-            //// Switch from SiRF Binary to NMEA Output
-            //string str = "A0 A2 00 18 81 02 01 01 00 01 01 01 05 01 01 01 00 01 00 01 00 00 00 01 00 00 12 C0 01 65 B0 B3";
-            //byte[] bytes = str.Split(' ').Select(s => Convert.ToByte(s, 16)).ToArray();
-            //_SerialPort.Write(bytes, 0, bytes.Length);
         }
     }
 }

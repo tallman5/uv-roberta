@@ -1,0 +1,14 @@
+﻿@page "/dashboard"
+<PageTitle>Dashboard | uv-roberta.com</PageTitle>
+
+<div id="dashMap" class="dash-back">
+    <Map />
+</div>
+
+<div id="dashCam" class="dash-front" onclick="dashboardMap.toggleView();" title="Webcam (click to toggle with map)">
+    <Webcam />
+</div>
+
+@code {
+
+}

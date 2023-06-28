@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UserSecretsId>aspnet-Roberta.Web-485D90A3-78B3-40AF-8050-72719C34B353</UserSecretsId>
+		<WebProject_DirectoryAccessLevelKey>0</WebProject_DirectoryAccessLevelKey>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+	  <WarningLevel>5</WarningLevel>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+	  <WarningLevel>5</WarningLevel>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.18" NoWarn="NU1605" />
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="6.0.18" NoWarn="NU1605" />
+		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="7.0.8" />
+		<PackageReference Include="Microsoft.Identity.Web" Version="2.12.4" />
+		<PackageReference Include="Microsoft.Identity.Web.UI" Version="2.12.4" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\Roberta\Roberta\Roberta.csproj" />
+	</ItemGroup>
+
+</Project>

@@ -1,27 +1,23 @@
-﻿using Roberta.Win.Input;
-using System.Runtime.Serialization;
-
-namespace Roberta.Io
+﻿namespace Roberta.Io
 {
     public class RxConnection : IConnection
     {
-        private RxState _RxState;
+        private readonly RxState _RxState;
         private FileStream? _Stream;
 
         public virtual void Close()
         {
-            if (_IsOpen)
-            {
-                _IsOpen = false;
-                CloseCommand.CanExecute = false;
-                OpenCommand.CanExecute = true;
-                _Stream?.Close();
-            }
+            _IsOpen = false;
+            _RxState.IsReady = false;
+            _Stream?.Close();
         }
-        public Command CloseCommand { get; private set; }
+
+        private readonly string _ConnectionString;
+        public string ConnectionString { get { return _ConnectionString; } }
 
         public void Dispose()
         {
+            Close();
             _Stream?.Dispose();
         }
 
@@ -34,38 +30,37 @@ namespace Roberta.Io
         public virtual void Open()
         {
             if (!_IsOpen)
-            {
-                _IsOpen = true;
-                CloseCommand.CanExecute = true;
-                OpenCommand.CanExecute = false;
                 Task.Run(ReadData);
-            }
-        }
-        public Command OpenCommand { get; private set; }
-
-        private string _PortName;
-        [DataMember]
-        public string PortName
-        {
-            get { return _PortName; }
         }
 
         private void ReadData()
         {
+            _IsOpen = _RxState.IsReady = false;
+            while (_IsOpen == false)
+            {
+                try
+                {
+                    _Stream = new FileStream(_ConnectionString, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                    _IsOpen = true;
+                    _RxState.IsReady = true;
+                }
+                catch
+                {
+                    Thread.Sleep(5000);
+                }
+            }
+
+            byte[] buffer = new byte[8];
+
             try
             {
-                _Stream = new FileStream(_PortName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-
-                byte[] buffer = new byte[8];
-
                 while (_IsOpen == true)
                 {
-                    _Stream.Read(buffer, 0, buffer.Length);
-                    var value = ScaleValue((BitConverter.ToInt16(buffer, 4)));
+                    _Stream?.Read(buffer, 0, buffer.Length);
+                    var value = BitConverter.ToInt16(buffer, 4);
                     var number = buffer[7];
                     if (number < 7)
                         this._RxState.ChannelValues[number] = value;
-
                     Thread.Sleep(10);
                 }
             }
@@ -75,24 +70,11 @@ namespace Roberta.Io
             }
         }
 
-        public RxConnection(string portName, RxState rxState)
+        public RxConnection(string connectionString, RxState rxState)
         {
             _IsOpen = false;
-            _PortName = portName;
+            _ConnectionString = connectionString;
             _RxState = rxState;
-            CloseCommand = new Command(Close, false);
-            OpenCommand = new Command(Open, true);
-        }
-
-        public int ScaleValue(int value)
-        {
-            return ScaleValue(value, -32768, 32768, 1000, 2000);
-        }
-
-        public int ScaleValue(int value, int minValue, int maxValue, int scaledMinValue, int scaledMaxValue)
-        {
-            int scaledValue = scaledMinValue + (int)((double)(value - minValue) / (maxValue - minValue) * (scaledMaxValue - scaledMinValue));
-            return scaledValue;
         }
     }
 }
