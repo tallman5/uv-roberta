@@ -1,11 +1,12 @@
-﻿using Roberta.Io;
+﻿using Microsoft.AspNetCore.SignalR.Client;
+using Roberta.Io;
 using System.ComponentModel;
 
 namespace Roberta.Cli
 {
     internal class Program
     {
-        private static object lockObject = new();
+        private static readonly object lockObject = new();
         private static RoboteqConnection? roboteqConnection;
 
         static void Main(string[] args)
@@ -13,17 +14,16 @@ namespace Roberta.Cli
             Console.Clear();
 
             //Defaults for Raspberry Pi
+            var baseUrl = "https://192.168.1.156:7142";
             var gamepadPath = "/dev/input/by-id/usb-FrSky_FrSky_Simulator_4995316A3546-joystick";
             var gpsPath = "/dev/serial/by-id/usb-Prolific_Technology_Inc._USB-Serial_Controller_D-if00-port0";
             var roboteqPath = "/dev/serial/by-id/usb-Roboteq_Motor_Controller_MDC2XXX-if00";
 
-            string hardware = "Raspberry Pi";
 #if DEBUG
-            hardware = "Windows";
+            baseUrl = "https://192.168.1.156:7142";
             gpsPath = "COM5";
             roboteqPath = "COM4";
 #endif
-            Console.WriteLine($"Detected {hardware} hardware.");
 
             var connections = new List<IConnection>();
 
@@ -44,6 +44,22 @@ namespace Roberta.Cli
                 Console.WriteLine($"Opening {connection.ConnectionString} connection...");
                 connection.Open();
             }
+
+            var handler = new HttpClientHandler
+            {
+                // Ignore certificate validation errors
+                ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true
+            };
+            Console.WriteLine("Connecting to hub...");
+            var hubUrl = baseUrl + "/robertaHub";
+            HubConnection hubConnection = new HubConnectionBuilder()
+                .WithUrl(hubUrl, options =>
+                {
+                    options.HttpMessageHandlerFactory = _ => handler;
+                })
+                .WithAutomaticReconnect()
+                .Build();
+            hubConnection.StartAsync();
 
             Console.WriteLine();
             Console.WriteLine("Running, press enter to exit.");
