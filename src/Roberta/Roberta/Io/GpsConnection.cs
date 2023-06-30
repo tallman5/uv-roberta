@@ -101,8 +101,9 @@ namespace Roberta.Io
                     _SerialPort.DataReceived += SerialPort_DataReceived;
                     _IsOpen = _GpsState.IsReady = true;
                 }
-                catch
+                catch(Exception ex)
                 {
+                    Console.WriteLine(ex);
                     Thread.Sleep(5000);
                 }
             }

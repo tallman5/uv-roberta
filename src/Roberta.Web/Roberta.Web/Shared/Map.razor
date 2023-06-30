@@ -32,9 +32,9 @@
             .WithAutomaticReconnect()
             .Build();
 
-        hubConnection.On<GpsMixerState>("GpsMixerStateUpdated", gpsMixerState =>
+        hubConnection.On<GpsState>("GpsStateUpdated", gpsState =>
         {
-            jsRuntime.InvokeVoidAsync("dashboardMap.updateRobertaLocation", gpsMixerState);
+            jsRuntime.InvokeVoidAsync("dashboardMap.updateRobertaLocation", gpsState);
         });
 
         await hubConnection.StartAsync();
@@ -44,7 +44,7 @@
     {
         if (firstRender)
         {
-            var apiKey = Configuration.GetSection("BingMapsApiKey").Value;
+            var apiKey = Configuration.GetSection("MapKey").Value;
             await jsRuntime.InvokeVoidAsync("dashboardMap.initializeMap", "mapDiv", apiKey);
         }
     }
