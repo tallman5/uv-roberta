@@ -1,56 +1,33 @@
 ﻿@page "/map"
 @using Microsoft.AspNetCore.Http.Connections.Client
-@using Roberta.Io
 @using Microsoft.AspNetCore.SignalR.Client
-@using Microsoft.Extensions.Configuration
-@implements IDisposable
-@inject IConfiguration Configuration
-@inject NavigationManager Navigation
-@inject IJSRuntime jsRuntime
+@using Roberta.Io
+@inherits BaseComponent
 
 <div id="mapDiv" class="dash-cover"></div>
 
 @code {
-    private HubConnection? hubConnection;
-    private HttpClientHandler? handler;
-
     protected override async Task OnInitializedAsync()
     {
-        handler = new HttpClientHandler
-            {
-#if DEBUG
-                // Ignore certificate validation errors
-                ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true
-#endif
-            };
-
-        hubConnection = new HubConnectionBuilder()
-            .WithUrl(Navigation.ToAbsoluteUri("/robertaHub"), options =>
-            {
-                options.HttpMessageHandlerFactory = _ => handler;
-            })
-            .WithAutomaticReconnect()
-            .Build();
-
-        hubConnection.On<GpsState>("GpsStateUpdated", gpsState =>
+        HubConnection!.On<GpsState>("GpsStateUpdated", gpsState =>
         {
-            jsRuntime.InvokeVoidAsync("dashboardMap.updateRobertaLocation", gpsState);
+            JSRuntime!.InvokeVoidAsync("dashboardMap.updateRobertaLocation", gpsState);
         });
 
-        await hubConnection.StartAsync();
+        await HubConnection!.StartAsync();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            var apiKey = Configuration.GetSection("MapKey").Value;
-            await jsRuntime.InvokeVoidAsync("dashboardMap.initializeMap", "mapDiv", apiKey);
+            var apiKey = Configuration!.GetSection("MapKey").Value;
+            await JSRuntime!.InvokeVoidAsync("dashboardMap.initializeMap", "mapDiv", apiKey);
         }
     }
 
     public void Dispose()
     {
-        hubConnection?.DisposeAsync().AsTask().Wait();
+        HubConnection?.DisposeAsync().AsTask().Wait();
     }
 }

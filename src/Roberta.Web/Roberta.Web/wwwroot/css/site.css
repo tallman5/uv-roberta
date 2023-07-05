@@ -70,15 +70,6 @@ a, .btn-link {
     z-index: 0;
 }
 
-.dash-front {
-    height: 30vh;
-    width: 20vw;
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    z-index: 10;
-}
-
 .dash-cover {
     position: absolute;
     top: 0;
@@ -86,6 +77,25 @@ a, .btn-link {
     height: 100%;
     width: 100%;
     object-fit: cover;
+}
+
+.dash-channels {
+    background-color: #ffffff33;
+    border-radius: 5px;
+    padding: 5px;
+    position: absolute;
+    right: 0;
+    top: 56px;
+    z-index: 10;
+}
+
+.dash-front {
+    height: 30vh;
+    width: 20vw;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    z-index: 10;
 }
 
 #robertaTop {

@@ -15,7 +15,7 @@
 
         public static int ScaleValue(int value)
         {
-            return ScaleValue(value, short.MinValue, short.MaxValue, 0, 1000);
+            return ScaleValue(value, short.MinValue, short.MaxValue, -1000, 1000);
         }
 
         public static int ScaleValue(int value, int minValue, int maxValue, int scaledMinValue, int scaledMaxValue)

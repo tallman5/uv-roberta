@@ -46,18 +46,20 @@ namespace Roberta.Io
                 {
                     _RoboteqPort.Open();
                     Send("^ECHOF 1");                   // Echo off
-                    Send("~MXMD");                      // Query Mix Mode
-                    Send("?A");                         // Motor amps by channel
-                    Send("?A");                         // repeating first one, sometimes first query doesn't work
-                    Send("?BA");                        // Battery amps by channel
-                    Send("?M");                         // Motor Command Applied
-                    Send("?T");                         // Temperature
-                    Send("?V");                         // Volts
-                    Send("^MXMD 0");                    // Turn off mixing
-                    Send(string.Format("# {0}", 200));  // polling interval milliseconds
-                    Send("~MXMD");                      // Query Mix Mode
+                    //Send("~MXMD");                      // Query Mix Mode
+                    Send("^MXMD 1");
+                    //Send("?A");                         // Motor amps by channel
+                    //Send("?A");                         // repeating first one, sometimes first query doesn't work
+                    //Send("?BA");                        // Battery amps by channel
+                    //Send("?M");                         // Motor Command Applied
+                    //Send("?T");                         // Temperature
+                    //Send("?V");                         // Volts
+                    //Send("^MXMD 0");                    // Turn off mixing
+                    //Send(string.Format("# {0}", 200));  // polling interval milliseconds
+                    //Send("~MXMD");                      // Query Mix Mode
 
-                    _RoboteqPort.DataReceived += RoboteqPort_DataReceived;
+                    //_RoboteqPort.DataReceived += RoboteqPort_DataReceived;
+                    Send("^MXMD 1");
                     _IsOpen = _RoboteqState.IsReady = true;
                 }
                 catch

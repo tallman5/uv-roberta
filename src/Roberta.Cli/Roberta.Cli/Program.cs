@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
-using Microsoft.Identity.Client;
 using Roberta;
 using Roberta.Io;
 using System.ComponentModel;
@@ -7,6 +6,7 @@ using System.ComponentModel;
 Console.Clear();
 
 object lockObject = new();
+bool listening = true;
 
 //Defaults for Raspberry Pi
 var baseUrl = "https://mcpad01:7142";
@@ -15,7 +15,6 @@ var gpsPath = "/dev/serial/by-id/usb-Prolific_Technology_Inc._USB-Serial_Control
 var roboteqPath = "/dev/serial/by-id/usb-Roboteq_Motor_Controller_MDC2XXX-if00";
 
 #if DEBUG
-baseUrl = "https://mcpad01:7142";
 gpsPath = "COM5";
 roboteqPath = "COM4";
 #endif
@@ -56,7 +55,15 @@ HubConnection hubConnection = new HubConnectionBuilder()
     })
     .WithAutomaticReconnect()
     .Build();
-await hubConnection.StartAsync();
+try
+{
+    await hubConnection.StartAsync();
+    Console.WriteLine("SignalR connection established successfully.");
+}
+catch (Exception ex)
+{
+    Console.WriteLine("Error starting SignalR connection: " + ex.Message);
+}
 
 Console.WriteLine();
 Console.WriteLine("Running, press enter to exit.");
@@ -64,13 +71,13 @@ Console.WriteLine("Running, press enter to exit.");
 var pcea = new PropertyChangedEventArgs("IsReady");
 gpsState.PropertyChanged += GpsState_PropertyChanged;
 GpsState_PropertyChanged(gpsState, pcea);
-roboteqState.PropertyChanged += RoboteqState_PropertyChanged;
-RoboteqState_PropertyChanged(roboteqState, pcea);
+//roboteqState.PropertyChanged += RoboteqState_PropertyChanged;
+//RoboteqState_PropertyChanged(roboteqState, pcea);
 rxState.PropertyChanged += RxState_PropertyChanged;
 RxState_PropertyChanged(rxState, pcea);
 
 Console.ReadLine();
-
+listening = false;
 MoveToEnd();
 
 foreach (var connection in connections)
@@ -81,6 +88,7 @@ foreach (var connection in connections)
 
 void GpsState_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
 {
+    if (!listening) return;
     lock (lockObject)
     {
         if (sender is not GpsState state) return;
@@ -95,19 +103,12 @@ void GpsState_PropertyChanged(object? sender, System.ComponentModel.PropertyChan
 
 void MoveToEnd()
 {
-    Console.SetCursorPosition(0, 27);
-}
-
-void RoboteqState_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
-{
-    lock (lockObject)
-    {
-        MoveToEnd();
-    }
+    Console.SetCursorPosition(0, 21);
 }
 
 void RxState_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
 {
+    if (!listening) return;
     if (sender is not RxState state) return;
 
     lock (lockObject)
@@ -125,7 +126,7 @@ void RxState_PropertyChanged(object? sender, System.ComponentModel.PropertyChang
         && null != roboteqConnection && roboteqConnection.IsOpen)
     {
         var l = Utilities.ScaleValue(state.Channel03);
-        var r = Utilities.ScaleValue(state.Channel04);
+        var r = Utilities.ScaleValue(state.Channel04) * -1;
         var newLine = $"!M {l} {r}";
         roboteqConnection.Send(newLine);
     }

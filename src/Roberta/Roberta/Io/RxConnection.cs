@@ -61,7 +61,7 @@
                     var number = buffer[7];
                     if (number < 7)
                         this._RxState.ChannelValues[number] = value;
-                    Thread.Sleep(10);
+                    Thread.Sleep(1);
                 }
             }
             catch (Exception ex)

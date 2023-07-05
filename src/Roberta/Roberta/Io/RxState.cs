@@ -11,7 +11,7 @@ namespace Roberta.Io
 
     public class RxState : ItemState
     {
-        private const int CHANNELS = 7;
+        private const int CHANNELS = 16;
 
         public RxState()
         {
@@ -27,48 +27,57 @@ namespace Roberta.Io
             if (ChannelValues.Count != CHANNELS) throw new InvalidOperationException($"Channel values must contain exactly {CHANNELS} items.");
         }
 
+        [DataMember]
         public ObservableCollection<int> ChannelValues { get; private set; }
 
-        [DataMember]
         public int Channel01
         {
             get { return this.ChannelValues[0]; }
         }
 
-        [DataMember]
         public int Channel02
         {
             get { return this.ChannelValues[1]; }
         }
 
-        [DataMember]
         public int Channel03
         {
             get { return this.ChannelValues[2]; }
         }
 
-        [DataMember]
         public int Channel04
         {
             get { return this.ChannelValues[3]; }
         }
 
-        [DataMember]
         public int Channel05
         {
             get { return this.ChannelValues[4]; }
         }
 
-        [DataMember]
         public int Channel06
         {
             get { return this.ChannelValues[5]; }
         }
 
-        [DataMember]
         public int Channel07
         {
             get { return this.ChannelValues[6]; }
+        }
+
+        [DataMember]
+        private bool _InFailsafe;
+        public bool InFailsafe
+        {
+            get { return _InFailsafe; }
+            set
+            {
+                if (value != _InFailsafe)
+                {
+                    _InFailsafe = value;
+                    RaisePropertyChanged(nameof(InFailsafe));
+                }
+            }
         }
 
         [DataMember]

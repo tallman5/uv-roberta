@@ -11,6 +11,8 @@ builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
 builder.Services.AddControllersWithViews()
     .AddMicrosoftIdentityUI();
 
+string[] origins = new string[] { "https://login.microsoftonline.com", "https://atlas.microsoft.com" };
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("MicrosoftAuthentication", builder =>
