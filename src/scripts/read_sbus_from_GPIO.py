@@ -56,8 +56,6 @@ _latest_complete_packet = bau.zeros(_PACKET_LENGTH) #stores the last packet that
 _latest_complete_packet_timestamp = 0 #stores tick at which the packet was recorded
 _is_connected = False #True if receiver is getting transmission, False if not connected
 
-
-
 def _sanity_check_packet(packet):
     #checks for data coherency for UART frames
     #sbus is an *inverted* protocol
@@ -86,7 +84,7 @@ def _sanity_check_packet(packet):
         if bau.parity(cur_UART_frame[1:9]) == cur_UART_frame[9]:
             #due to inversion, parity checks fail when parity is equal
             return (False,f'Parity check failure (frame #{packet_bits_ptr/_UART_FRAME_LENGTH+1})', cur_UART_frame )
-    
+
     return ret_val
 
 def _on_change(gpio,level,tick):
@@ -96,7 +94,7 @@ def _on_change(gpio,level,tick):
         _working_packet_ptr, \
         _latest_complete_packet, \
         _latest_complete_packet_timestamp, \
-        _is_connected
+        _is_connected, _debug_counter
 
     time_elapsed = tick - _last_tick
 
@@ -118,7 +116,8 @@ def _on_change(gpio,level,tick):
 
             #SBus transmits transmission status in bits 279 and 280 (failsafe), high is connected
             _is_connected = bau.ba2int(_latest_complete_packet[279:281]) == 3
-            
+            _debug_counter = 0
+
 
         #reset working packet to accept the new packet data
         _working_packet.setall(0)

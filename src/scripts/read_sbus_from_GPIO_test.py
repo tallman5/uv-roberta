@@ -106,7 +106,7 @@ def device_test(reader):
         return
         
 
-DATA_PIN = 4
+DATA_PIN = 17
 
 if __name__=="__main__":
     reader = read_sbus_from_GPIO.SbusReader(DATA_PIN)
