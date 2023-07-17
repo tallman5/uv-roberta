@@ -4,7 +4,7 @@
 #include <unistd.h>
 
 /*
-g++ cpu_monitor.cpp -o cpu_monitor
+g++ -o cpu_monitor cpu_monitor_main.cpp
 */
 
 
