@@ -4,8 +4,8 @@ namespace Roberta.Io
 {
     public interface IRobertaClient
     {
+        Task Echo(string message);
         Task Iam(string screenName);
-        Task MessageReceived(DateTimeOffset messageDate, string message);
 
         // Drivers
         Task AddDriver(string userName);

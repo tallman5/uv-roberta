@@ -107,6 +107,8 @@ def _on_change(gpio,level,tick):
     if time_elapsed >= _PACKET_BOUNDRY_TIME:
         #if we are here then this method was triggered by the first "one" of this new packet
         #and we have just completed a frame boundry
+
+        print(f'{time_elapsed}')
         
         if (_sanity_check_packet(_working_packet)[0]):
             #only set _latest_complete_packet if it passes sanity check,
@@ -118,7 +120,6 @@ def _on_change(gpio,level,tick):
             _is_connected = bau.ba2int(_latest_complete_packet[279:281]) == 3
             _debug_counter = 0
 
-
         #reset working packet to accept the new packet data
         _working_packet.setall(0)
         _working_packet_ptr = 0
@@ -127,6 +128,9 @@ def _on_change(gpio,level,tick):
         _last_tick = tick 
         return
     
+    
+    print(f'{time_elapsed},',end='')
+
     num_bits = round((time_elapsed)/10) #10 microseconds per data bit, so number of bits since last state change is time difference/10
     bit_val = bool(-level+1) #enter the level *before* this state change which is the inverse of current change.
     

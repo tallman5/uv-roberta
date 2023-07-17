@@ -17,7 +17,6 @@ namespace Roberta.ComponentModel
 
     public class Item : NotifyPropertyChanged, IItem
     {
-
         private Guid _Id;
         [Key]
         [DataMember]

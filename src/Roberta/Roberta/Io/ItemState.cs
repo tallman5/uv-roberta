@@ -6,8 +6,12 @@ using System.Text;
 
 namespace Roberta.Io
 {
-    [DataContract(Namespace = "http://schemas.mcgurkin.net/2004/07/Roberta.Hardware")]
-    public class ItemState : Item
+    public interface IItemState
+    {
+        DateTimeOffset Timestamp { get; set; }
+    }
+
+    public class ItemState : Item, IItemState
     {
         public ItemState()
         {
@@ -42,13 +46,10 @@ namespace Roberta.Io
         public virtual DateTimeOffset Timestamp
         {
             get { return this._Timestamp; }
-            internal set
+            set
             {
                 if (this._Timestamp != value)
-                {
                     this._Timestamp = value;
-                    //RaisePropertyChanged("Timestamp");
-                }
             }
         }
     }

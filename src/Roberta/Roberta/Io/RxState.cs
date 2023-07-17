@@ -4,11 +4,6 @@ using System.Runtime.Serialization;
 
 namespace Roberta.Io
 {
-    public enum PilotMode
-    {
-        Transmitter, Mission, Other
-    }
-
     public class RxState : ItemState
     {
         private const int CHANNELS = 16;
@@ -23,47 +18,13 @@ namespace Roberta.Io
 
         private void ChannelValues_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
-            RaisePropertyChanged();
             if (ChannelValues.Count != CHANNELS) throw new InvalidOperationException($"Channel values must contain exactly {CHANNELS} items.");
+            Timestamp = DateTimeOffset.Now;
+            RaisePropertyChanged();
         }
 
         [DataMember]
-        public ObservableCollection<int> ChannelValues { get; private set; }
-
-        public int Channel01
-        {
-            get { return this.ChannelValues[0]; }
-        }
-
-        public int Channel02
-        {
-            get { return this.ChannelValues[1]; }
-        }
-
-        public int Channel03
-        {
-            get { return this.ChannelValues[2]; }
-        }
-
-        public int Channel04
-        {
-            get { return this.ChannelValues[3]; }
-        }
-
-        public int Channel05
-        {
-            get { return this.ChannelValues[4]; }
-        }
-
-        public int Channel06
-        {
-            get { return this.ChannelValues[5]; }
-        }
-
-        public int Channel07
-        {
-            get { return this.ChannelValues[6]; }
-        }
+        public ObservableCollection<int> ChannelValues { get; set; }
 
         [DataMember]
         private bool _InFailsafe;
@@ -75,31 +36,41 @@ namespace Roberta.Io
                 if (value != _InFailsafe)
                 {
                     _InFailsafe = value;
+                    Timestamp = DateTimeOffset.Now;
                     RaisePropertyChanged(nameof(InFailsafe));
                 }
             }
         }
 
         [DataMember]
-        public bool IsArmed
+        private bool _Ch17;
+        public bool Ch17
         {
-            get
+            get { return _Ch17; }
+            set
             {
-                if (!IsReady) return false;
-                bool returnValue = (ChannelValues[4] > 1600) ? true : false;
-                return returnValue;
+                if (value != _Ch17)
+                {
+                    _Ch17 = value;
+                    Timestamp = DateTimeOffset.Now;
+                    RaisePropertyChanged(nameof(Ch17));
+                }
             }
         }
 
         [DataMember]
-        public PilotMode PilotMode
+        private bool _Ch18;
+        public bool Ch18
         {
-            get
+            get { return _Ch18; }
+            set
             {
-                PilotMode returnValue = PilotMode.Transmitter;
-                if (ChannelValues[5] > -20000) returnValue = PilotMode.Mission;
-                if (ChannelValues[5] > 20000) returnValue = PilotMode.Other;
-                return returnValue;
+                if (value != _Ch18)
+                {
+                    _Ch18 = value;
+                    Timestamp = DateTimeOffset.Now;
+                    RaisePropertyChanged(nameof(Ch18));
+                }
             }
         }
     }
