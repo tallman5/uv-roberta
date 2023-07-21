@@ -1,8 +1,11 @@
-﻿namespace Roberta
+﻿using System.Net.NetworkInformation;
+using System.Net;
+
+namespace Roberta
 {
     public class Utilities
     {
-        private static readonly double p = 0.017453292519943295;    // Math.PI / 180
+        private static readonly double p = Math.PI / 180; // 0.017453292519943295;
 
         public static double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
         {
@@ -11,6 +14,44 @@
                     (1 - Math.Cos((lon2 - lon1) * p)) / 2;
 
             return 12742 * Math.Asin(Math.Sqrt(a)); // 2 * R; Earth Radius R = 6371 km
+        }
+
+        public static string GetLocalIPAddress()
+        {
+            try
+            {
+                // Get a list of all network interfaces on the machine
+                NetworkInterface[] networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
+
+                foreach (NetworkInterface networkInterface in networkInterfaces)
+                {
+                    // We only care about interfaces that are up and not loopback
+                    if (networkInterface.OperationalStatus == OperationalStatus.Up &&
+                        networkInterface.NetworkInterfaceType != NetworkInterfaceType.Loopback)
+                    {
+                        // Get all IP addresses assigned to this interface
+                        IPInterfaceProperties properties = networkInterface.GetIPProperties();
+                        foreach (UnicastIPAddressInformation ip in properties.UnicastAddresses)
+                        {
+                            // Check if the address is IPv4 and not the loopback address
+                            if (ip.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork &&
+                                !IPAddress.IsLoopback(ip.Address))
+                            {
+                                return ip.Address.ToString();
+                            }
+                        }
+                    }
+                }
+
+                // If no suitable IP address is found, return an empty string
+                Console.WriteLine("Could not find an IP Address, using loopback");
+                return IPAddress.Loopback.ToString();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error while getting IP address: " + ex.Message);
+                return IPAddress.Loopback.ToString();
+            }
         }
 
         public static int ScaleValue(int value)

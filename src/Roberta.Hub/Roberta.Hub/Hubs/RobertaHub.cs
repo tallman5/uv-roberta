@@ -9,25 +9,26 @@ namespace Roberta.Hub.Hubs
     {
         public async void Echo(string message)
         {
-            Console.WriteLine($"Echo Message: {message}");
             await Clients.All.Echo(message);
         }
 
         public override Task OnConnectedAsync()
         {
-            Console.WriteLine("New Connection");
             return base.OnConnectedAsync();
+        }
+
+        public override Task OnDisconnectedAsync(Exception? exception)
+        {
+            return base.OnDisconnectedAsync(exception);
         }
 
         public async Task UpdateGpsState(GpsState gpsState)
         {
-            Console.WriteLine("Updating GPS State...");
             await Clients.All.GpsStateUpdated(gpsState);
         }
 
         public async Task UpdateRxState(RxState rxState)
         {
-            Console.WriteLine("Updating RX State...");
             await Clients.All.RxStateUpdated(rxState);
         }
     }

@@ -36,4 +36,19 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHub<RobertaHub>("/robertaHub");
 
+var origins = new string[]{
+                "http://localhost:8000",
+                "http://localhost:9000",
+                "https://agreeable-sky-00a48a010.3.azurestaticapps.net"
+            };
+
+app.UseCors(builder =>
+{
+    builder
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        .AllowCredentials()
+        .WithOrigins(origins);
+});
+
 app.Run();
