@@ -1,5 +1,8 @@
 #!/bin/sh
 
+startDir="$(pwd)"
+
+cd ~
 
 echo -e "\e[32mUpdating...\e[0m"
 sudo apt update
@@ -34,13 +37,13 @@ sudo apt install -y libjpeg-dev libevent-dev libbsd-dev nlohmann-json3-dev libwe
 git clone --depth=1 https://github.com/pikvm/ustreamer
 cd ustreamer/
 make
-cd ..
+cd ~
 
 
 echo -e "\e[32mConfiguring ustreamer service...\e[0m"
 sudo useradd -r ustreamer
 sudo usermod -a -G video ustreamer
-sudo cp "$(pwd)/src/ustreamer/ustreamer@.service" "/etc/systemd/system/ustreamer@.service"
+sudo cp "${startDir}/src/ustreamer/ustreamer@.service" "/etc/systemd/system/ustreamer@.service"
 sudo systemctl enable ustreamer@.service
 sudo systemctl enable ustreamer@0.service
 
