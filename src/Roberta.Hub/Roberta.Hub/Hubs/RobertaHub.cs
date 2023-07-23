@@ -7,20 +7,10 @@ namespace Roberta.Hub.Hubs
     [AllowAnonymous]
     public class RobertaHub : Hub<IRobertaClient>
     {
-        DateTimeOffset lastGpsTs;
-        DateTimeOffset lastRoboteqTs;
-        DateTimeOffset lastRxTs;
-        DateTimeOffset lastThumbstickTs;
-
-        public RobertaHub()
-        {
-            Console.Write("Initializing Roberta Hub...");
-            lastGpsTs = DateTimeOffset.MinValue;
-            lastRoboteqTs = DateTimeOffset.MinValue;
-            lastRxTs = DateTimeOffset.MinValue;
-            lastThumbstickTs = DateTimeOffset.MinValue;
-            Console.WriteLine("done");
-        }
+        static DateTimeOffset lastGpsTs = DateTimeOffset.MinValue;
+        static DateTimeOffset lastRoboteqTs = DateTimeOffset.MinValue;
+        static DateTimeOffset lastRxTs = DateTimeOffset.MinValue;
+        static DateTimeOffset lastThumbstickTs = DateTimeOffset.MinValue;
 
         public async void Echo(string message)
         {
