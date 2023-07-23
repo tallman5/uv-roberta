@@ -1,9 +1,6 @@
 #!/bin/sh
 
 
-cd ~
-
-
 echo -e "\e[32mUpdating...\e[0m"
 sudo apt update
 
@@ -45,7 +42,7 @@ sudo apt install -y libjpeg-dev libevent-dev libbsd-dev nlohmann-json3-dev libwe
 git clone --depth=1 https://github.com/pikvm/ustreamer
 cd ustreamer/
 make
-cd ~
+cd ..
 
 
 echo -e "\e[32mConfiguring ustreamer service...\e[0m"
