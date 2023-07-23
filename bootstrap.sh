@@ -29,14 +29,6 @@ echo -e "\e[32mInstalling .NET...\e[0m"
 curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 6.0.4xx
 
 
-echo -e "\e[32mUpdating .bashrc...\e[0m"
-echo '' >> ~/.bashrc
-echo 'export DOTNET_ROOT=$HOME/.dotnet' >> ~/.bashrc
-echo 'export PATH=$PATH:$HOME/.dotnet' >> ~/.bashrc
-echo 'export ASPNETCORE_URLS="http://*:5000"' >> ~/.bashrc
-source ~/.bashrc
-
-
 echo -e "\e[32mInstalling ustreamer...\e[0m"
 sudo apt install -y libjpeg-dev libevent-dev libbsd-dev nlohmann-json3-dev libwebsockets-dev
 git clone --depth=1 https://github.com/pikvm/ustreamer
@@ -51,6 +43,14 @@ sudo usermod -a -G video ustreamer
 sudo cp "$(pwd)/src/ustreamer/ustreamer@.service" "/etc/systemd/system/ustreamer@.service"
 sudo systemctl enable ustreamer@.service
 sudo systemctl enable ustreamer@0.service
+
+
+echo -e "\e[32mUpdating .bashrc...\e[0m"
+echo '' >> ~/.bashrc
+echo 'export DOTNET_ROOT=$HOME/.dotnet' >> ~/.bashrc
+echo 'export PATH=$PATH:$HOME/.dotnet' >> ~/.bashrc
+echo 'export ASPNETCORE_URLS="http://*:5000"' >> ~/.bashrc
+source ~/.bashrc
 
 
 echo -e "\e[32mRebooting...\e[0m"
