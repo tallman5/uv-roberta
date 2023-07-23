@@ -65,9 +65,9 @@ cd ${startDir}/src/Roberta.Hub/Roberta.Hub
 dotnet publish -c Release -r linux-arm64 -o ./publish --self-contained false -p:PublishSingleFile=true
 
 
-echo -e "\e[32mConfiguring Roberta Hub service...\e[0m"
-sudo cp "${startDir}/src/Roberta.Hub/Roberta.Hub/publish/robhub.service" "/etc/systemd/system/robhub.service"
-sudo systemctl enable robhub.service
+# echo -e "\e[32mConfiguring Roberta Hub service...\e[0m"
+# sudo cp "${startDir}/src/Roberta.Hub/Roberta.Hub/publish/robhub.service" "/etc/systemd/system/robhub.service"
+# sudo systemctl enable robhub.service
 
 
 echo -e "\e[32mBuilding Client...\e[0m"
@@ -75,9 +75,9 @@ cd ${startDir}/src/Roberta.Client/Roberta.Client
 dotnet publish -c Release -r linux-arm64 -o ./publish --self-contained false -p:PublishSingleFile=true
 
 
-echo -e "\e[32mConfiguring Roberta Client service...\e[0m"
-sudo cp "${startDir}/src/Roberta.Client/Roberta.Client/publish/robcli.service" "/etc/systemd/system/robcli.service"
-sudo systemctl enable robcli.service
+# echo -e "\e[32mConfiguring Roberta Client service...\e[0m"
+# sudo cp "${startDir}/src/Roberta.Client/Roberta.Client/publish/robcli.service" "/etc/systemd/system/robcli.service"
+# sudo systemctl enable robcli.service
 
 
 echo -e "\e[32mBuilding CPU Monitor...\e[0m"
