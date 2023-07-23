@@ -4,7 +4,8 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/home/pi/uv-roberta/src/Roberta.Hub/Roberta.Hub/publish/robhub
+WorkingDirectory=/home/pi/uv-roberta/src/Roberta.Hub/Roberta.Hub/publish
+ExecStart=robhub
 Restart=always
 User=pi
 
