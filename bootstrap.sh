@@ -1,6 +1,8 @@
 #!/bin/sh
 
+
 startDir="$(pwd)"
+
 
 cd ~
 
@@ -37,6 +39,8 @@ sudo apt install -y libjpeg-dev libevent-dev libbsd-dev nlohmann-json3-dev libwe
 git clone --depth=1 https://github.com/pikvm/ustreamer
 cd ustreamer/
 make
+
+
 cd ~
 
 
@@ -54,6 +58,36 @@ echo 'export DOTNET_ROOT=$HOME/.dotnet' >> ~/.bashrc
 echo 'export PATH=$PATH:$HOME/.dotnet' >> ~/.bashrc
 echo 'export ASPNETCORE_URLS="http://*:5000"' >> ~/.bashrc
 source ~/.bashrc
+
+
+echo -e "\e[32mBuilding Hub...\e[0m"
+cd ${startDir}/src/Roberta.Hub/Roberta.Hub
+dotnet publish -c Release -r linux-arm64 -o ./publish --self-contained false -p:PublishSingleFile=true
+
+
+echo -e "\e[32mConfiguring Roberta Hub service...\e[0m"
+sudo cp "${startDir}/src/Roberta.Hub/Roberta.Hub/publish/robhub.service" "/etc/systemd/system/robhub.service"
+sudo systemctl enable robhub.service
+
+
+echo -e "\e[32mBuilding Client...\e[0m"
+cd ${startDir}/src/Roberta.Client/Roberta.Client
+dotnet publish -c Release -r linux-arm64 -o ./publish --self-contained false -p:PublishSingleFile=true
+
+
+echo -e "\e[32mConfiguring Roberta Client service...\e[0m"
+sudo cp "${startDir}/src/Roberta.Client/Roberta.Client/publish/robcli.service" "/etc/systemd/system/robcli.service"
+sudo systemctl enable robcli.service
+
+
+echo -e "\e[32mBuilding CPU Monitor...\e[0m"
+cd ${startDir}/src/CpuMonitor
+g++ -o cpu_monitor cpu_monitor_main.cpp
+
+
+echo -e "\e[32mBuilding RX Reader...\e[0m"
+cd ${startDir}/src/Roberta.Rxreader
+g++ -o rx_reader_main rx_reader_main.cpp rx_reader.cpp -lpigpio
 
 
 echo -e "\e[32mRebooting...\e[0m"
