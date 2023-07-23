@@ -54,6 +54,17 @@ namespace Roberta
             }
         }
 
+        public static string[] GetOrigins()
+        {
+            var returnValue = new string[]{
+                "http://localhost:8000",
+                "http://localhost:9000",
+                "https://www.uvroberta.com",
+                "https://agreeable-sky-00a48a010.3.azurestaticapps.net"
+            };
+            return returnValue;
+        }
+
         public static int ScaleValue(int value)
         {
             return ScaleValue(value, short.MinValue, short.MaxValue, -1000, 1000);

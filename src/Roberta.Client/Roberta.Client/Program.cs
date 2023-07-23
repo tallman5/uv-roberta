@@ -22,7 +22,7 @@ leftConnection = "COM5";
 HubConnection hubConnection;
 var handler = new HttpClientHandler
 {
-    // Ignore certificate validation errors
+    // TODO: Add cert to Raspberry Pi, ignoring cert errors for now
     ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true
 };
 Console.Write("Connecting to hub...");
@@ -45,8 +45,9 @@ connections.Add(leftGpsConnection);
 
 foreach (var connection in connections)
 {
-    Console.WriteLine($"Opening {connection.ConnectionString} connection...");
+    Console.Write($"Opening {connection.ConnectionString} connection...");
     connection.Open();
+    Console.WriteLine("done.");
 }
 
 

@@ -51,6 +51,23 @@ namespace Roberta.Io
             }
         }
 
+        /// <summary>
+        /// One NMEA line has all values, set all before firing prop changed
+        /// </summary>
+        /// <param name="lat"></param>
+        /// <param name="lon"></param>
+        /// <param name="speed"></param>
+        /// <param name="heading"></param>
+        internal void SetVals(double lat, double lon, double speed, double heading)
+        {
+            _Latitude = lat;
+            _Longitude = lon;
+            _Speed = speed;
+            _Heading = heading;
+            Timestamp = DateTimeOffset.Now;
+            RaisePropertyChanged();
+        }
+
         protected double _Speed;
         [DataMember]
         public virtual double Speed

@@ -25,38 +25,27 @@ namespace Roberta.Io
             _SerialPort?.Dispose();
         }
 
-        static public double GetDegrees(string DM, string Dir)
+        static public double GetDegrees(string degreesMinutes, string hemishpere)
         {
-            try
-            {
-                double returnValue = 0D;
+            // NMEA data is in the format of "[D]DDMM.MMMM,H" where:
+            // Lat uses two Ds, Lon uses three Ds
+            // Hemishpere is N, S, E or W, where numerical representation has S and W as negatvie numbers
 
-                if (string.IsNullOrWhiteSpace(DM) || string.IsNullOrWhiteSpace(Dir))
-                    return returnValue;
+            double returnValue = 0D;
 
-                string t = DM[DM.IndexOf(".")..];
-                double FM = double.Parse(DM[DM.IndexOf(".")..]);
-
-                //Get the minutes.
-                t = DM.Substring(DM.IndexOf(".") - 2, 2);
-                double Min = double.Parse(DM.Substring(DM.IndexOf(".") - 2, 2));
-
-                //Degrees
-                t = DM.Substring(0, DM.IndexOf(".") - 2);
-                returnValue = double.Parse(DM[..(DM.IndexOf(".") - 2)]);
-
-                if (Dir == "S" || Dir == "W")
-                    returnValue = -(returnValue + (Min + FM) / 60);
-                else
-                    returnValue += (Min + FM) / 60;
-
+            if (string.IsNullOrWhiteSpace(degreesMinutes) || string.IsNullOrWhiteSpace(hemishpere))
                 return returnValue;
-            }
-            catch (Exception ex)
-            {
-                var message = string.Format("Error getting degrees from DM/Dir of {0}/{1}", DM, Dir);
-                throw new Exception(message, ex);
-            }
+
+            var dotIndex = degreesMinutes.IndexOf(".");
+
+            var degrees = double.Parse(degreesMinutes[..(dotIndex - 2)]);
+            var minutes = double.Parse(degreesMinutes[(dotIndex - 2)..]);
+            returnValue = degrees + (minutes / 60);
+
+            if (hemishpere == "S" || hemishpere == "W")
+                returnValue = -returnValue;
+
+            return returnValue;
         }
 
         public GpsConnection(string connectionString, GpsState gpsState)
@@ -101,7 +90,7 @@ namespace Roberta.Io
                     _SerialPort.DataReceived += SerialPort_DataReceived;
                     _IsOpen = _GpsState.IsReady = true;
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Console.WriteLine(ex);
                     Thread.Sleep(5000);
@@ -141,29 +130,20 @@ namespace Roberta.Io
 
             if (!isValid) return;
 
+            //Console.WriteLine(sentenceToCheck);
+
             var fields = sentenceToCheck.Split(new char[] { ',' });
 
             switch (fields[0])
             {
-                case "$GPGGA":
-                    _GpsState.Latitude = GetDegrees(fields[2], fields[3]);
-                    _GpsState.Longitude = GetDegrees(fields[4], fields[5]);
-                    break;
-                case "$GPGSA":
-                    break;
-                case "$GPGSV":
-                    break;
                 case "$GPRMC":
-                    double speed;
-                    if (double.TryParse(fields[7], out speed))
-                        _GpsState.Speed = speed;
-                    else
-                        _GpsState.Speed = 0;
-                    double heading;
-                    if (double.TryParse(fields[8], out heading))
-                        _GpsState.Heading = heading;
-                    else
-                        _GpsState.Heading = 0;
+                    double lat, lon, speed, heading;
+                    lat = GetDegrees(fields[3], fields[4]);
+                    lon = GetDegrees(fields[5], fields[6]);
+                    double.TryParse(fields[7], out speed);
+                    double.TryParse(fields[8], out heading);
+                    _GpsState.SetVals(lat, lon, speed, heading);
+                    //Console.WriteLine($"{lat}, {lon}, {speed}, {heading}");
                     break;
             }
         }

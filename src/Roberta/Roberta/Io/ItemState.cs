@@ -31,7 +31,7 @@ namespace Roberta.Io
         public virtual bool IsReady
         {
             get { return this._IsReady; }
-            internal set
+            set
             {
                 if (this._IsReady != value)
                 {

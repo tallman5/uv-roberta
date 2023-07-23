@@ -17,10 +17,6 @@ sudo cp /usr/lib/udev/rules.d/60-serial.rules /usr/lib/udev/rules.d/60-serial.ol
 sudo wget -O /usr/lib/udev/rules.d/60-serial.rules https://raw.githubusercontent.com/systemd/systemd/main/rules.d/60-serial.rules
 
 
-echo -e "\e[32mInstalling git...\e[0m"
-sudo apt install -y git
-
-
 echo -e "\e[32mInstalling FTP...\e[0m"
 sudo apt install -y vsftpd
 sudo cp /etc/vsftpd.conf /etc/vsftpd.old
@@ -52,9 +48,12 @@ make
 cd ~
 
 
-echo -e "\e[32mCreating directories...\e[0m"
-mkdir robhub
-mkdir robgps
+echo -e "\e[32mConfiguring ustreamer service...\e[0m"
+sudo useradd -r ustreamer
+sudo usermod -a -G video ustreamer
+sudo cp "$(pwd)/src/ustreamer/ustreamer@.service" "/etc/systemd/system/ustreamer@.service"
+sudo systemctl enable ustreamer@.service
+sudo systemctl enable ustreamer@0.service
 
 
 echo -e "\e[32mRebooting...\e[0m"

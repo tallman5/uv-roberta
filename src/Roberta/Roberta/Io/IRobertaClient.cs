@@ -25,5 +25,6 @@ namespace Roberta.Io
         Task GpsStateUpdated(GpsState gpsState);
         Task RoboteqStateUpdated(RoboteqState roboteqState);
         Task RxStateUpdated(RxState rxState);
+        Task ThumbstickStateUpdated(ThumbstickState thumbstickState);
     }
 }
