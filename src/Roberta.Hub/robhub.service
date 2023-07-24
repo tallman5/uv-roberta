@@ -1,9 +1,0 @@
-[Unit]
-Description=robhub service
-After=network.target
-
-[Service]
-ExecStart=/home/pi/uv-roberta/src/Roberta.Hub/Roberta.Hub/publish/robhub
-
-[Install]
-WantedBy=multi-user.target

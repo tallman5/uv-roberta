@@ -5,6 +5,8 @@ namespace Roberta
 {
     public class Utilities
     {
+        public const string AUTH_SCHEMES = "AzureAD, AzureADOpenID, AzureADCookie, Bearer";
+
         private static readonly double p = Math.PI / 180; // 0.017453292519943295;
 
         public static double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
