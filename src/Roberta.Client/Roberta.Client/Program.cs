@@ -1,9 +1,24 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.Configuration;
 using Roberta;
 using Roberta.Io;
 using System.ComponentModel;
 
 Console.Clear();
+
+const string secretKey = "AzureADClientSecret";
+IConfiguration configuration = new ConfigurationBuilder()
+            .AddUserSecrets<Program>()
+            .Build();
+string clientSecret = configuration[secretKey];
+if (string.IsNullOrWhiteSpace(clientSecret))
+{
+    var evSetting = Environment.GetEnvironmentVariable(secretKey);
+    if (string.IsNullOrWhiteSpace(evSetting))
+        throw new Exception("Could not get secrets.");
+    else
+        clientSecret = evSetting;
+}
 
 var ipAddress = Utilities.GetLocalIPAddress();
 var hubUrl = $"https://rofo.mcgurkin.net:5001/robertaHub";
@@ -12,13 +27,28 @@ var lastGpsTs = DateTimeOffset.MinValue;
 
 #if DEBUG
 leftConnection = "COM5";
+//hubUrl = "https://localhost:7224/robertaHub";
 #endif
+
+// Auth
+string tenantId = "a2716cd4-06bd-4131-a023-1a69bfae111a";
+string clientId = "499964bd-21a3-4135-85ed-1456fd18c186";
+string scope = "api://742cd12c-d936-49ea-8ea6-de4f3a785aad/.default";
+
+var result = Utilities.GetClientToken(tenantId, clientId, clientSecret, scope);
+var token = result.AccessToken;
 
 // Hub Connection
 HubConnection hubConnection;
 Console.Write("Connecting to hub...");
 hubConnection = new HubConnectionBuilder()
-    .WithUrl(hubUrl)
+    .WithUrl(hubUrl, options =>
+    {
+        options.AccessTokenProvider = async () =>
+        {
+            return await Task.FromResult(token);
+        };
+    })
     .WithAutomaticReconnect()
     .Build();
 await hubConnection.StartAsync();
@@ -45,17 +75,26 @@ Console.WriteLine("Cleaning up resources...");
 await hubConnection.StopAsync();
 await hubConnection.DisposeAsync();
 
-void LeftGpsState_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+async void LeftGpsState_PropertyChanged(object? sender, PropertyChangedEventArgs e)
 {
     if (leftGpsState.Timestamp > lastGpsTs)
     {
-        SendToHub("UpdateGpsState", leftGpsState);
+        await SendToHubAsync("UpdateGpsState", leftGpsState);
         lastGpsTs = leftGpsState.Timestamp;
     }
 }
 
-void SendToHub(string methodName, object arg1)
+async Task SendToHubAsync(string methodName, object arg1)
 {
     if (hubConnection.State == HubConnectionState.Connected)
-        hubConnection.InvokeAsync(methodName, arg1);
+    {
+        try
+        {
+            await hubConnection.InvokeAsync(methodName, arg1);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
+    }
 }

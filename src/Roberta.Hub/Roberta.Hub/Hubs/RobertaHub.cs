@@ -5,7 +5,7 @@ using System.Collections.ObjectModel;
 
 namespace Roberta.Hub.Hubs
 {
-    [Authorize(AuthenticationSchemes = Utilities.AUTH_SCHEMES)]
+    [Authorize]
     public class RobertaHub : Hub<IRobertaClient>
     {
         // TODO: remove static _Drivers when app goes distributed
@@ -42,7 +42,7 @@ namespace Roberta.Hub.Hubs
 
         public override Task OnConnectedAsync()
         {
-            if (Context.User.IsInRole("Roberta"))
+            if (Context.User.IsInRole("roberta.hardware"))
             {
                 Groups.AddToGroupAsync(Context.ConnectionId, RobertaGroup);
             }
@@ -90,16 +90,17 @@ namespace Roberta.Hub.Hubs
             if (null != existingDriver)
             {
                 _Drivers.Remove(existingDriver);
-                Clients.All.DriversUpdated(_Drivers);
+                Clients.All?.DriversUpdated(_Drivers);
             }
-            //if (Context.User.IsInRole("Roberta"))
-            //{
-            //    _LastGpsState.IsOnline = false;
-            //    _LastRoboteqState.IsOnline = false;
 
-            //    Clients.Caller.GpsStateUpdated(_LastGpsState);
-            //    Clients.Caller.RoboteqStateUpdated(_LastRoboteqState);
-            //}
+            if (Context.User.IsInRole("Roberta"))
+            {
+                _LastGpsState.IsReady = false;
+                _LastRoboteqState.IsReady= false;
+
+                Clients.Caller.GpsStateUpdated(_LastGpsState);
+                Clients.Caller.RoboteqStateUpdated(_LastRoboteqState);
+            }
             return base.OnDisconnectedAsync(exception);
         }
 
@@ -119,7 +120,7 @@ namespace Roberta.Hub.Hubs
                 await Clients.All.DriversUpdated(_Drivers);
         }
 
-        [Authorize(Roles = "Administrator")]
+        [Authorize(Roles = "roberta.admins")]
         public async Task SetPowerScale(decimal powerScale)
         {
             await Clients.Group(RobertaGroup).SetPowerScale(powerScale);
@@ -130,7 +131,7 @@ namespace Roberta.Hub.Hubs
             await Clients.Group(RobertaGroup).SetXY(x, y);
         }
 
-        [Authorize(Roles = "Administrator")]
+        [Authorize(Roles = "roberta.admins")]
         public async Task StartDriving(string connectionId)
         {
             await StopDriving();
@@ -144,36 +145,39 @@ namespace Roberta.Hub.Hubs
             }
         }
 
-        [Authorize(Roles = "Administrator")]
+        [Authorize(Roles = "roberta.admins")]
         public async Task StopDriving()
         {
             await ResetDrivers();
             //await SetCommandPriority(CommandPriority.Transmitter);
         }
 
+        [Authorize(Roles = "roberta.hardware")]
         public async Task UpdateGpsState(GpsState gpsState)
         {
             if (gpsState.Timestamp > _LastGpsState.Timestamp)
             {
-                await Clients.All.GpsStateUpdated(gpsState);
+                await Clients.AllExcept(Context.ConnectionId).GpsStateUpdated(gpsState);
                 _LastGpsState = gpsState;
             }
         }
 
+        [Authorize(Roles = "roberta.hardware")]
         public async Task UpdateRoboteqState(RoboteqState roboteqState)
         {
             if (roboteqState.Timestamp > _LastRoboteqState.Timestamp)
             {
-                await Clients.All.RoboteqStateUpdated(roboteqState);
+                await Clients.AllExcept(Context.ConnectionId).RoboteqStateUpdated(roboteqState);
                 _LastRoboteqState = roboteqState;
             }
         }
 
+        [Authorize(Roles = "roberta.hardware")]
         public async Task UpdateThumbstickState(ThumbstickState thumbstickState)
         {
             if (thumbstickState.Timestamp > _LastThumstickState.Timestamp)
             {
-                await Clients.All.ThumbstickStateUpdated(thumbstickState);
+                await Clients.AllExcept(Context.ConnectionId).ThumbstickStateUpdated(thumbstickState);
                 _LastThumstickState = thumbstickState;
             }
         }

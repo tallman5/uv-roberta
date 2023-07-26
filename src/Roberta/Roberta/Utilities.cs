@@ -1,5 +1,6 @@
 ﻿using System.Net.NetworkInformation;
 using System.Net;
+using Microsoft.Identity.Client;
 
 namespace Roberta
 {
@@ -16,6 +17,19 @@ namespace Roberta
                     (1 - Math.Cos((lon2 - lon1) * p)) / 2;
 
             return 12742 * Math.Asin(Math.Sqrt(a)); // 2 * R; Earth Radius R = 6371 km
+        }
+
+        public static AuthenticationResult GetClientToken(string tenantId, string clientId, string clientSecret, string scope)
+        {
+            string authority = $"https://login.microsoftonline.com/{tenantId}";
+            string[] scopes = new string[] { scope };
+            var app = ConfidentialClientApplicationBuilder
+                .Create(clientId)
+                .WithClientSecret(clientSecret)
+                .WithAuthority(new Uri(authority))
+                .Build();
+            AuthenticationResult returnValue = app.AcquireTokenForClient(scopes).ExecuteAsync().Result;
+            return returnValue;
         }
 
         public static string GetLocalIPAddress()
@@ -59,6 +73,7 @@ namespace Roberta
         public static string[] GetOrigins()
         {
             var returnValue = new string[]{
+                "https://localhost:7224",
                 "http://localhost:8000",
                 "http://localhost:9000",
                 "https://www.uvroberta.com",
