@@ -1,17 +1,12 @@
 #!/bin/sh
 
+# sudo apt update && sudo apt upgrade -y && sudo apt install git -y && git clone https://github.com/tallman5/uv-roberta.git && chmod +x uv-roberta/bootstrap.sh
+
 
 startDir="$(pwd)"
 
 
 cd ~
-
-echo -e "\e[32mUpdating...\e[0m"
-sudo apt update
-
-
-echo -e "\e[32mUpgrading...\e[0m"
-sudo apt upgrade -y
 
 
 echo -e "\e[32mFix for missing /dev/serial/by-id...\e[0m"
@@ -60,9 +55,9 @@ echo 'export ASPNETCORE_URLS="http://*:5000"' >> ~/.bashrc
 source ~/.bashrc
 
 
-echo -e "\e[32mBuilding Hub...\e[0m"
-cd ${startDir}/src/Roberta.Hub/Roberta.Hub
-dotnet publish -c Release -r linux-arm64 -o ./publish --self-contained false -p:PublishSingleFile=true
+# echo -e "\e[32mBuilding Hub...\e[0m"
+# cd ${startDir}/src/Roberta.Hub/Roberta.Hub
+# dotnet publish -c Release -r linux-arm64 -o ./publish --self-contained false -p:PublishSingleFile=true
 
 
 # echo -e "\e[32mConfiguring Roberta Hub service...\e[0m"
@@ -70,9 +65,9 @@ dotnet publish -c Release -r linux-arm64 -o ./publish --self-contained false -p:
 # sudo systemctl enable robhub.service
 
 
-echo -e "\e[32mBuilding Client...\e[0m"
-cd ${startDir}/src/Roberta.Client/Roberta.Client
-dotnet publish -c Release -r linux-arm64 -o ./publish --self-contained false -p:PublishSingleFile=true
+# echo -e "\e[32mBuilding Client...\e[0m"
+# cd ${startDir}/src/Roberta.Client/Roberta.Client
+# dotnet publish -c Release -r linux-arm64 -o ./publish --self-contained false -p:PublishSingleFile=true
 
 
 # echo -e "\e[32mConfiguring Roberta Client service...\e[0m"
@@ -88,6 +83,22 @@ g++ -o cpu_monitor cpu_monitor_main.cpp
 echo -e "\e[32mBuilding RX Reader...\e[0m"
 cd ${startDir}/src/Roberta.Rxreader
 g++ -o rx_reader_main rx_reader_main.cpp rx_reader.cpp -lpigpio
+
+
+echo -e "\e[32mInstalling snapd...\e[0m"
+sudo apt install snapd -y
+sudo snap install core
+
+
+echo -e "\e[32mInstalling certbot...\e[0m"
+sudo snap install --classic certbot
+sudo ln -s /snap/bin/certbot /usr/bin/certbot
+sudo certbot certonly --standalone
+sudo certbot renew --dry-run
+
+
+echo -e "\e[32mInstalling nginx...\e[0m"
+sudo apt-get install nginx -y
 
 
 echo -e "\e[32mRebooting...\e[0m"
