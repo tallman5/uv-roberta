@@ -4,21 +4,13 @@ using Roberta;
 using Roberta.Io;
 using System.ComponentModel;
 
+bool keepRunning = true;
 Console.Clear();
+Console.CancelKeyPress += Console_CancelKeyPress;
 
-const string secretKey = "AzureADClientSecret";
 IConfiguration configuration = new ConfigurationBuilder()
-            .AddUserSecrets<Program>()
+            .AddJsonFile("secrets.json")
             .Build();
-string clientSecret = configuration[secretKey];
-if (string.IsNullOrWhiteSpace(clientSecret))
-{
-    var evSetting = Environment.GetEnvironmentVariable(secretKey);
-    if (string.IsNullOrWhiteSpace(evSetting))
-        throw new Exception("Could not get secrets.");
-    else
-        clientSecret = evSetting;
-}
 
 var ipAddress = Utilities.GetLocalIPAddress();
 var hubUrl = $"https://rofo.mcgurkin.net:5001/robertaHub";
@@ -35,7 +27,7 @@ string tenantId = "a2716cd4-06bd-4131-a023-1a69bfae111a";
 string clientId = "499964bd-21a3-4135-85ed-1456fd18c186";
 string scope = "api://742cd12c-d936-49ea-8ea6-de4f3a785aad/.default";
 
-var result = Utilities.GetClientToken(tenantId, clientId, clientSecret, scope);
+var result = Utilities.GetClientToken(tenantId, clientId, configuration["RobertaClientSecret"], scope);
 var token = result.AccessToken;
 
 // Hub Connection
@@ -68,8 +60,11 @@ foreach (var connection in connections)
 
 leftGpsState.PropertyChanged += LeftGpsState_PropertyChanged;
 
-Console.WriteLine("Running, press Enter to exit");
-Console.ReadLine();
+Console.WriteLine("Running, press Ctrl+C to exit");
+while (keepRunning)
+{
+    Thread.Sleep(1000);
+}
 
 Console.WriteLine("Cleaning up resources...");
 await hubConnection.StopAsync();
@@ -97,4 +92,10 @@ async Task SendToHubAsync(string methodName, object arg1)
             Console.WriteLine(ex);
         }
     }
+}
+
+void Console_CancelKeyPress(object? sender, ConsoleCancelEventArgs e)
+{
+    e.Cancel = true;
+    keepRunning = false;
 }

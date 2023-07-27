@@ -9,7 +9,7 @@ var origins = Utilities.GetOrigins();
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Configuration.AddEnvironmentVariables();
+builder.Configuration.AddJsonFile("secrets.json");
 
 // When running on a Pi, issues loading appsettings.json
 // Just spit out one of the settings to ensure loaded
@@ -28,8 +28,31 @@ builder.WebHost.ConfigureKestrel((context, serverOptions) =>
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddMicrosoftIdentityWebApi(builder.Configuration).EnableTokenAcquisitionToCallDownstreamApi()
-            .AddMicrosoftGraph(builder.Configuration.GetSection("MicrosoftGraph"))
-            .AddInMemoryTokenCaches();
+    .AddMicrosoftGraph(builder.Configuration.GetSection("MicrosoftGraph"))
+    .AddInMemoryTokenCaches();
+
+builder.Services.AddAuthentication("BearerForSignalR")
+    .AddJwtBearer("BearerForSignalR", options =>
+    {
+        options.Audience = builder.Configuration["AzureAd:ResourceId"];
+        options.Authority = $"{builder.Configuration["AzureAd:Instance"]}{builder.Configuration["AzureAd:TenantId"]}";
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) &&
+                    (path.StartsWithSegments("/robertaHub")))
+                {
+                    // Read the token out of the query string
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
+        };
+    });
+
 
 builder.Services.AddSignalR();
 builder.Services.AddControllers();
@@ -97,7 +120,7 @@ app.UseSwaggerUI(c =>
     c.OAuthClientId(app.Configuration["Swagger:ClientId"]);
     c.OAuthUseBasicAuthenticationWithAccessCodeGrant();
 });
-//app.UseHttpsRedirection();
+app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

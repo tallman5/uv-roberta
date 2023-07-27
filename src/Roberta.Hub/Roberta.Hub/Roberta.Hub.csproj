@@ -6,7 +6,19 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>cb91d303-7dcd-478c-8f92-5db9fc706b90</UserSecretsId>
     <AssemblyName>robhub</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <PackAsTool>True</PackAsTool>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="robhub.service" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="robhub.service">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.14" />

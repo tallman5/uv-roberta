@@ -3,7 +3,12 @@ Description=robcli service
 After=network.target
 
 [Service]
-ExecStart=/home/pi/uv-roberta/src/Roberta.Client/Roberta.Client/publish/robcli
+Environment=DOTNET_ROOT=/home/pi/.dotnet
+Environment=PATH=$PATH:/home/pi/.dotnet'
+WorkingDirectory=/home/pi/roberta/client
+ExecStart=/home/pi/roberta/client/robcli
+Restart=always
+User=pi
 
 [Install]
 WantedBy=multi-user.target

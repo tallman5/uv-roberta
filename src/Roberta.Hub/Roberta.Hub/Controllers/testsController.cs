@@ -6,9 +6,9 @@ namespace Roberta.Hub.Controllers
     [Authorize]
     [Route("api/[controller]")]
     [ApiController]
-    public class adminController : BaseController
+    public class testsController : BaseController
     {
-        public adminController(ILogger<adminController> logger, IConfiguration configuration)
+        public testsController(ILogger<testsController> logger, IConfiguration configuration)
             : base(logger, configuration) { }
 
         [HttpPost("echo")]
@@ -19,6 +19,13 @@ namespace Roberta.Hub.Controllers
             return message;
         }
 
+        [Authorize(AuthenticationSchemes = "AllSchemes")]
+        [HttpGet("getBad")]
+        public DateTime GetBad()
+        {
+            return DateTime.Now;
+        }
+
         [HttpGet("hw")]
         [AllowAnonymous]
         public string Hw()
@@ -27,7 +34,7 @@ namespace Roberta.Hub.Controllers
         }
 
         [HttpGet("hw-auth")]
-        [Authorize]
+        [Authorize(AuthenticationSchemes = Utilities.AUTH_SCHEMES)]
         public string HwAuth()
         {
             return "Hellow World";

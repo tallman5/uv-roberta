@@ -9,7 +9,7 @@ namespace Roberta.Hub.Controllers
     [ApiController]
     public class userController : BaseController
     {
-        public userController(ILogger<adminController> logger, IConfiguration configuration)
+        public userController(ILogger<testsController> logger, IConfiguration configuration)
             : base(logger, configuration) { }
 
         [HttpGet("guestToken")]
@@ -20,8 +20,6 @@ namespace Roberta.Hub.Controllers
             string clientId = _configuration["AzureAd:RobertaClientId"];
             string scope = $"api://{_configuration["AzureAd:ClientId"]}/.default";
             string clientSecret = _configuration["RobertaClientSecret"];
-            if (string.IsNullOrWhiteSpace(clientSecret))
-                clientSecret = Environment.GetEnvironmentVariable("RobertaClientSecret");
             var ar = Utilities.GetClientToken(tenantId, clientId, clientSecret, scope);
             var returnValue = UserToken.FromAuthResult(ar);
             return returnValue;

@@ -6,7 +6,7 @@ namespace Roberta
 {
     public class Utilities
     {
-        public const string AUTH_SCHEMES = "AzureAD, AzureADOpenID, AzureADCookie, Bearer";
+        public const string AUTH_SCHEMES = "Bearer, BearerForSignalR";
 
         private static readonly double p = Math.PI / 180; // 0.017453292519943295;
 

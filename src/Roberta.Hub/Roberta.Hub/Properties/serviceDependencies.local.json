@@ -1,8 +1,6 @@
 {
   "dependencies": {
     "identityapp1": {
-      "secretStore": "LocalSecretsFile",
-      "resourceId": null,
       "type": "identityapp.secretStore",
       "connectionId": "AzureAD:ClientSecret"
     }

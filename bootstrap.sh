@@ -54,7 +54,7 @@ sudo systemctl enable ustreamer@0.service
 
 echo -e "\e[32mUpdating .bashrc...\e[0m"
 echo '' >> ~/.bashrc
-echo 'export DOTNET_ROOT=$HOME/.dotnet' >> ~/.bashrc
+echo 'export DOTNET_ROOT=/home/pi/.dotnet' >> ~/.bashrc
 echo 'export PATH=$PATH:$HOME/.dotnet' >> ~/.bashrc
 echo 'export ASPNETCORE_URLS="http://*:5000"' >> ~/.bashrc
 source ~/.bashrc
