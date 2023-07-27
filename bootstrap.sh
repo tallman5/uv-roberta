@@ -99,6 +99,11 @@ sudo certbot renew --dry-run
 
 echo -e "\e[32mInstalling nginx...\e[0m"
 sudo apt-get install nginx -y
+# sudo nano /etc/nginx/sites-available/ustreamer
+# sudo ln -s /etc/nginx/sites-available/ustreamer /etc/nginx/sites-enabled/
+# sudo nginx -t
+# sudo systemctl reload nginx
+
 
 
 echo -e "\e[32mRebooting...\e[0m"
