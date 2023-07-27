@@ -8,6 +8,7 @@
 
 # Upload two secrets.json files, one for Hub and one for Client 
 
+# bash ~/uv-roberta/bootstrap.sh
 
 cd ~
 
@@ -85,7 +86,7 @@ sudo systemctl reload nginx
 
 echo -e "\e[32mBuilding Hub...\e[0m"
 cd ~/uv-roberta/src/Roberta.Hub/Roberta.Hub
-dotnet publish -c Release -r linux-arm64 -o ~/roberta/hub --self-contained false -p:PublishSingleFile=true
+~/.dotnet/dotnet publish -c Release -r linux-arm64 -o ~/roberta/hub --self-contained false -p:PublishSingleFile=true
 
 echo -e "\e[32mConfiguring Roberta Hub service...\e[0m"
 sudo cp ~/uv-roberta/src/Roberta.Hub/Roberta.Hub/robhub.service /etc/systemd/system/robhub.service
@@ -94,7 +95,7 @@ sudo systemctl enable robhub.service
 
 echo -e "\e[32mBuilding Client...\e[0m"
 cd ~/uv-roberta/src/Roberta.Client/Roberta.Client
-dotnet publish -c Release -r linux-arm64 -o ~/roberta/client --self-contained false -p:PublishSingleFile=true
+~/.dotnet/dotnet publish -c Release -r linux-arm64 -o ~/roberta/client --self-contained false -p:PublishSingleFile=true
 
 echo -e "\e[32mConfiguring Roberta Client service...\e[0m"
 sudo cp ~/uv-roberta/src/Roberta.Client/Roberta.Client/robcli.service /etc/systemd/system/robcli.service
@@ -107,7 +108,7 @@ g++ -o ~/roberta/cpu_monitor cpu_monitor_main.cpp
 cd ~
 
 echo -e "\e[32mBuilding RX Reader...\e[0m"
-cd ~/uv-roberta/src/Roberta.Rxreader
+cd ~/uv-roberta/src/Roberta.RxReader
 g++ -o ~/roberta/rx_reader_main rx_reader_main.cpp rx_reader.cpp -lpigpio
 
 
