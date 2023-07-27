@@ -6,7 +6,7 @@ After=network.target
 Environment=DOTNET_ROOT=/home/pi/.dotnet
 Environment=PATH=$PATH:/home/pi/.dotnet'
 WorkingDirectory=/home/pi/roberta/hub
-ExecStart=/home/pi/roberta/hub/robchub
+ExecStart=/home/pi/roberta/hub/robhub
 Restart=always
 User=pi
 
