@@ -6,8 +6,9 @@ using System.ComponentModel;
 
 bool keepRunning = true;
 Console.Clear();
-Console.CancelKeyPress += Console_CancelKeyPress;
+Console.WriteLine("Running, press Ctrl+C to exit");
 
+Console.CancelKeyPress += Console_CancelKeyPress;
 IConfiguration configuration = new ConfigurationBuilder()
             .AddJsonFile("secrets.json")
             .Build();
@@ -27,13 +28,14 @@ string tenantId = "a2716cd4-06bd-4131-a023-1a69bfae111a";
 string clientId = "499964bd-21a3-4135-85ed-1456fd18c186";
 string scope = "api://742cd12c-d936-49ea-8ea6-de4f3a785aad/.default";
 
+var token = string.Empty;
+Console.Write("Aquiring access token...");
 var result = Utilities.GetClientToken(tenantId, clientId, configuration["RobertaClientSecret"], scope);
-var token = result.AccessToken;
+token = result.AccessToken;
+Console.WriteLine("done.");
 
 // Hub Connection
-HubConnection hubConnection;
-Console.Write("Connecting to hub...");
-hubConnection = new HubConnectionBuilder()
+HubConnection hubConnection = new HubConnectionBuilder()
     .WithUrl(hubUrl, options =>
     {
         options.AccessTokenProvider = async () =>
@@ -43,8 +45,22 @@ hubConnection = new HubConnectionBuilder()
     })
     .WithAutomaticReconnect()
     .Build();
-await hubConnection.StartAsync();
-Console.WriteLine("done.");
+while (hubConnection.State != HubConnectionState.Connected && keepRunning)
+{
+    try
+    {
+        Console.Write("Connecting to hub...");
+        await hubConnection.StartAsync();
+        Console.WriteLine("done.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("error.");
+        Console.WriteLine(ex.Message);
+        Console.WriteLine("Waiting ten seconds to try again.");
+        Thread.Sleep(10000);
+    }
+}
 
 var connections = new List<IConnection>();
 var leftGpsState = new GpsState { Title = "Left GPS" };
@@ -60,7 +76,6 @@ foreach (var connection in connections)
 
 leftGpsState.PropertyChanged += LeftGpsState_PropertyChanged;
 
-Console.WriteLine("Running, press Ctrl+C to exit");
 while (keepRunning)
 {
     Thread.Sleep(1000);

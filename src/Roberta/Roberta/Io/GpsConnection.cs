@@ -92,8 +92,9 @@ namespace Roberta.Io
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex);
-                    Thread.Sleep(5000);
+                    Console.WriteLine(ex.Message);
+                    Console.WriteLine("Waiting ten seconds to try again.");
+                    Thread.Sleep(10000);
                 }
             }
         }
