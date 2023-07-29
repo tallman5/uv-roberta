@@ -34,7 +34,7 @@ namespace Roberta.Hub.Controllers
         }
 
         [HttpGet("hw-auth")]
-        [Authorize(AuthenticationSchemes = Utilities.AUTH_SCHEMES)]
+        [Authorize]
         public string HwAuth()
         {
             return "Hellow World";

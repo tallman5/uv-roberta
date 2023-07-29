@@ -28,8 +28,8 @@ builder.WebHost.ConfigureKestrel((context, serverOptions) =>
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddMicrosoftIdentityWebApi(builder.Configuration).EnableTokenAcquisitionToCallDownstreamApi()
-    .AddMicrosoftGraph(builder.Configuration.GetSection("MicrosoftGraph"))
     .AddInMemoryTokenCaches();
+    //.AddMicrosoftGraph(builder.Configuration.GetSection("MicrosoftGraph"))
 
 builder.Services.AddAuthentication("BearerForSignalR")
     .AddJwtBearer("BearerForSignalR", options =>
