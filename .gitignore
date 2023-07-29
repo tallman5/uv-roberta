@@ -352,3 +352,4 @@ MigrationBackup/
 .ionide/
 /src/Roberta.Hub/Roberta.Hub/secrets.json
 /src/Roberta.Client/Roberta.Client/secrets.json
+src/secrets.json
