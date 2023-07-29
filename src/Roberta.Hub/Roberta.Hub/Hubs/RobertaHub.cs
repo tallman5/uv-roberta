@@ -42,7 +42,7 @@ namespace Roberta.Hub.Hubs
 
         public override Task OnConnectedAsync()
         {
-            if (Context.User.IsInRole("roberta.hardware"))
+            if (Context.User.IsInRole("roberta.devices"))
             {
                 Groups.AddToGroupAsync(Context.ConnectionId, RobertaGroup);
             }
@@ -152,7 +152,7 @@ namespace Roberta.Hub.Hubs
             //await SetCommandPriority(CommandPriority.Transmitter);
         }
 
-        [Authorize(Roles = "roberta.hardware")]
+        [Authorize(Roles = "roberta.devices")]
         public async Task UpdateGpsState(GpsState gpsState)
         {
             if (gpsState.Timestamp > _LastGpsState.Timestamp)
@@ -162,7 +162,7 @@ namespace Roberta.Hub.Hubs
             }
         }
 
-        [Authorize(Roles = "roberta.hardware")]
+        [Authorize(Roles = "roberta.devices")]
         public async Task UpdateRoboteqState(RoboteqState roboteqState)
         {
             if (roboteqState.Timestamp > _LastRoboteqState.Timestamp)
@@ -172,7 +172,7 @@ namespace Roberta.Hub.Hubs
             }
         }
 
-        [Authorize(Roles = "roberta.hardware")]
+        [Authorize(Roles = "roberta.devices")]
         public async Task UpdateThumbstickState(ThumbstickState thumbstickState)
         {
             if (thumbstickState.Timestamp > _LastThumstickState.Timestamp)

@@ -20,17 +20,17 @@ var lastGpsTs = DateTimeOffset.MinValue;
 
 #if DEBUG
 leftConnection = "COM5";
-//hubUrl = "https://localhost:7224/robertaHub";
+hubUrl = "https://localhost:7224/robertaHub";
 #endif
 
 // Auth
 string tenantId = "a2716cd4-06bd-4131-a023-1a69bfae111a";
-string clientId = "499964bd-21a3-4135-85ed-1456fd18c186";
-string scope = "api://742cd12c-d936-49ea-8ea6-de4f3a785aad/.default";
+string clientId = "dbc6ac97-0625-46d0-9fb5-70dd08d38b25";
+string scope = "api://b530235a-5b14-412c-871a-ee193946fc1e/.default";
 
 var token = string.Empty;
 Console.Write("Aquiring access token...");
-var result = Utilities.GetClientToken(tenantId, clientId, configuration["RobertaClientSecret"], scope);
+var result = Utilities.GetClientToken(tenantId, clientId, configuration["RobertaDeviceSecret"], scope);
 token = result.AccessToken;
 Console.WriteLine("done.");
 
