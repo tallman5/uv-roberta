@@ -15,6 +15,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="..\..\secrets.json" Link="secrets.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="robhub.service">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

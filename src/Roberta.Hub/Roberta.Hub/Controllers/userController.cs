@@ -17,8 +17,8 @@ namespace Roberta.Hub.Controllers
         public UserToken GetGuestToken()
         {
             string tenantId = _configuration["AzureAd:TenantId"];
-            string clientId = _configuration["AzureAd:RobertaWebId"];
-            string scope = $"api://{_configuration["AzureAd:ClientId"]}/.default";
+            string clientId = _configuration["RobertaWebId"];
+            string scope = _configuration["Scope"];
             string clientSecret = _configuration["RobertaWebSecret"];
             var ar = Utilities.GetClientToken(tenantId, clientId, clientSecret, scope);
             var returnValue = UserToken.FromAuthResult(ar);

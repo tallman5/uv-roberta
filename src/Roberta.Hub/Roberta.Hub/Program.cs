@@ -4,12 +4,19 @@ using Microsoft.OpenApi.Models;
 using Roberta;
 using Roberta.Hub.Hubs;
 using Swashbuckle.AspNetCore.SwaggerUI;
+using System.Reflection;
+using Microsoft.AspNetCore.Authentication;
 
 var origins = Utilities.GetOrigins();
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Configuration.AddJsonFile("secrets.json");
+var runDirectoy = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+if (!string.IsNullOrWhiteSpace(runDirectoy))
+{
+    var secretsFilePath = Path.Combine(runDirectoy, "secrets.json");
+    builder.Configuration.AddJsonFile(secretsFilePath);
+}
 
 // When running on a Pi, issues loading appsettings.json
 // Just spit out one of the settings to ensure loaded
@@ -28,8 +35,8 @@ builder.WebHost.ConfigureKestrel((context, serverOptions) =>
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddMicrosoftIdentityWebApi(builder.Configuration).EnableTokenAcquisitionToCallDownstreamApi()
-    .AddInMemoryTokenCaches();
-    //.AddMicrosoftGraph(builder.Configuration.GetSection("MicrosoftGraph"))
+    .AddInMemoryTokenCaches()
+    .AddMicrosoftGraph(builder.Configuration.GetSection("MicrosoftGraph"));
 
 builder.Services.AddAuthentication("BearerForSignalR")
     .AddJwtBearer("BearerForSignalR", options =>
