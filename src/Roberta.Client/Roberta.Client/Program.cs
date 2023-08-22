@@ -28,8 +28,8 @@ var token = string.Empty;
 Console.Write("Aquiring access token...");
 var result = Utilities.GetClientToken(
     configuration["AzureAD:TenantId"],
-    configuration["RobertaDeviceId"], 
-    configuration["RobertaDeviceSecret"],
+    configuration["DeviceClientId"], 
+    configuration["DeviceSecret"],
     configuration["Scope"]);
 token = result.AccessToken;
 Console.WriteLine("done.");

@@ -4,25 +4,12 @@ using Microsoft.OpenApi.Models;
 using Roberta;
 using Roberta.Hub.Hubs;
 using Swashbuckle.AspNetCore.SwaggerUI;
-using System.Reflection;
-using Microsoft.AspNetCore.Authentication;
 
 var origins = Utilities.GetOrigins();
 
 var builder = WebApplication.CreateBuilder(args);
 
-var runDirectoy = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-if (!string.IsNullOrWhiteSpace(runDirectoy))
-{
-    var secretsFilePath = Path.Combine(runDirectoy, "secrets.json");
-    builder.Configuration.AddJsonFile(secretsFilePath);
-}
-
-// When running on a Pi, issues loading appsettings.json
-// Just spit out one of the settings to ensure loaded
-var configVal = builder.Configuration.GetSection("AzureAd:Domain").Value;
-var msg = $"==== Domain Config Val: {configVal} ====";
-Console.WriteLine(msg);
+builder.Configuration.AddJsonFile("secrets.json");
 
 #if !DEBUG
 builder.Configuration.AddJsonFile("appsettings.Release.json");
@@ -32,6 +19,12 @@ builder.WebHost.ConfigureKestrel((context, serverOptions) =>
     serverOptions.Configure(kestrelSection).Endpoint("HTTPS", listenOptions => { });
 });
 #endif
+
+// When running on a Pi, issues loading appsettings.json
+// Just spit out one of the settings to ensure loaded
+var configVal = builder.Configuration.GetSection("AzureAd:Domain").Value;
+var msg = $"==== Domain Config Val: {configVal} ====";
+Console.WriteLine(msg);
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddMicrosoftIdentityWebApi(builder.Configuration).EnableTokenAcquisitionToCallDownstreamApi()

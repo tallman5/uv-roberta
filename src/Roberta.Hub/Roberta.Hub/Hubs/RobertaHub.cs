@@ -93,7 +93,7 @@ namespace Roberta.Hub.Hubs
                 Clients.All?.DriversUpdated(_Drivers);
             }
 
-            if (Context.User.IsInRole("Roberta"))
+            if (Context.User.IsInRole("roberta.devices"))
             {
                 _LastGpsState.IsReady = false;
                 _LastRoboteqState.IsReady= false;
