@@ -70,5 +70,6 @@
         "list": "cpp",
         "unordered_map": "cpp",
         "xhash": "cpp"
-    }
+    },
+    "dotnet.defaultSolution": "disable"
 }
