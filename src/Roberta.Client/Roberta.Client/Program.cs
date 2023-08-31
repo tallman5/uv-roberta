@@ -17,10 +17,13 @@ var ipAddress = Utilities.GetLocalIPAddress();
 var hubUrl = $"https://rofo.mcgurkin.net:5001/robertaHub";
 string leftConnection = "/dev/serial/by-id/usb-Prolific_Technology_Inc._USB-Serial_Controller_D-if00-port0";
 var lastGpsTs = DateTimeOffset.MinValue;
+var roboteqPortName = "/dev/ttyACM0";
+var lastRoboteqTs = DateTimeOffset.MinValue;
 
 #if DEBUG
 leftConnection = "COM5";
 hubUrl = "https://localhost:7224/robertaHub";
+roboteqPortName = "COM5";
 #endif
 
 // Auth
@@ -63,9 +66,18 @@ while (hubConnection.State != HubConnectionState.Connected && keepRunning)
 }
 
 var connections = new List<IConnection>();
+
 var leftGpsState = new GpsState { Title = "Left GPS" };
 var leftGpsConnection = new GpsConnection(leftConnection, leftGpsState);
 connections.Add(leftGpsConnection);
+
+var roboteqState = new RoboteqState { Title = "Roboteq" };
+var roboteqConnection = new RoboteqConnection(roboteqPortName, roboteqState);
+connections.Add(roboteqConnection);
+hubConnection.On<decimal, decimal>("SetXY", (x, y) =>
+{
+    SetXY(x, y);
+});
 
 foreach (var connection in connections)
 {
@@ -75,6 +87,7 @@ foreach (var connection in connections)
 }
 
 leftGpsState.PropertyChanged += LeftGpsState_PropertyChanged;
+roboteqState.PropertyChanged += RoboteqState_PropertyChanged;
 
 while (keepRunning)
 {
@@ -84,6 +97,16 @@ while (keepRunning)
 Console.WriteLine("Cleaning up resources...");
 await hubConnection.StopAsync();
 await hubConnection.DisposeAsync();
+foreach (var connection in connections)
+{
+    connection.Dispose();
+}
+
+void Console_CancelKeyPress(object? sender, ConsoleCancelEventArgs e)
+{
+    e.Cancel = true;
+    keepRunning = false;
+}
 
 async void LeftGpsState_PropertyChanged(object? sender, PropertyChangedEventArgs e)
 {
@@ -91,6 +114,15 @@ async void LeftGpsState_PropertyChanged(object? sender, PropertyChangedEventArgs
     {
         await SendToHubAsync("UpdateGpsState", leftGpsState);
         lastGpsTs = leftGpsState.Timestamp;
+    }
+}
+
+async void RoboteqState_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+{
+    if (roboteqState.Timestamp > lastRoboteqTs)
+    {
+        await SendToHubAsync("UpdateRoboteqState", roboteqState);
+        lastRoboteqTs = roboteqState.Timestamp;
     }
 }
 
@@ -109,8 +141,8 @@ async Task SendToHubAsync(string methodName, object arg1)
     }
 }
 
-void Console_CancelKeyPress(object? sender, ConsoleCancelEventArgs e)
+void SetXY(decimal x, decimal y)
 {
-    e.Cancel = true;
-    keepRunning = false;
+    string newLine = $"!M {y}, {x}";
+    roboteqConnection?.Send(newLine);
 }

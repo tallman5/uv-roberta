@@ -3,6 +3,7 @@ using Microsoft.Identity.Web;
 using Microsoft.OpenApi.Models;
 using Roberta;
 using Roberta.Hub.Hubs;
+using Roberta.Hub.Services;
 using Swashbuckle.AspNetCore.SwaggerUI;
 
 var origins = Utilities.GetOrigins();
@@ -57,6 +58,10 @@ builder.Services.AddAuthentication("BearerForSignalR")
 builder.Services.AddSignalR();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddHostedService<GpsBackgroundService>();
+builder.Services.AddSingleton<RoboteqBackgroundService>();
+builder.Services.AddHostedService(provider => provider.GetRequiredService<RoboteqBackgroundService>());
 
 builder.Services.AddSwaggerGen(c =>
 {

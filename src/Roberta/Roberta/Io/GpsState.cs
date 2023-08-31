@@ -58,7 +58,7 @@ namespace Roberta.Io
         /// <param name="lon"></param>
         /// <param name="speed"></param>
         /// <param name="heading"></param>
-        internal void SetVals(double lat, double lon, double speed, double heading)
+        public void SetVals(double lat, double lon, double speed, double heading)
         {
             _Latitude = lat;
             _Longitude = lon;

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using Roberta.Hub.Services;
 using Roberta.Io;
 using System.Collections.ObjectModel;
 
@@ -16,9 +17,17 @@ namespace Roberta.Hub.Hubs
         private static GpsState _LastGpsState;
         private static RoboteqState _LastRoboteqState;
         private static ThumbstickState _LastThumstickState;
+        private static int _GuestIndex = 1;
 
-        public RobertaHub()
+        public const string GpsStateUpdated = "GpsStateUpdated";
+        public const string RoboteqStateUpdated = "RoboteqStateUpdated";
+
+        private readonly RoboteqBackgroundService _roboteqBackgroundService;
+
+        public RobertaHub(RoboteqBackgroundService roboteqBackgroundService)
         {
+            _roboteqBackgroundService = roboteqBackgroundService;
+
             if (null == _Drivers) _Drivers = new();
             if (null == _LastGpsState) _LastGpsState = new();
             if (null == _LastRoboteqState) _LastRoboteqState = new();
@@ -49,29 +58,35 @@ namespace Roberta.Hub.Hubs
             else
             {
                 var userName = Context.User.Identity.Name;
-                if (string.IsNullOrWhiteSpace(userName) || userName == "guest@mcgurkin.net")
-                    userName = Context.ConnectionId;
+                if (string.IsNullOrWhiteSpace(userName))
+                    userName = "guest@mcgurkin.net";
 
-                var existingDriver = _Drivers.Where(d => d.UserName == userName).FirstOrDefault();
+                var existingDriver = _Drivers.Where(d => d.ConnectionId == Context.ConnectionId).FirstOrDefault();
                 if (null == existingDriver)
                 {
                     var newDriver = new Driver
                     {
                         ConnectionId = Context.ConnectionId,
                         DriverStatusType = DriverStatusTypes.Waiting,
-                        ScreenName = userName,
                         Title = "Driver",
                         UserName = userName
                     };
 
-                    if (newDriver.ScreenName == "joseph@mcgurkin.net")
+                    switch (newDriver.UserName)
                     {
-                        newDriver.ScreenName = "tallman";
-                        _Drivers.Insert(0, newDriver);
-                    }
-                    else
-                    {
-                        _Drivers.Add(newDriver);
+                        case "joseph@mcgurkin.net":
+                            newDriver.ScreenName = "tallman";
+                            _Drivers.Insert(0, newDriver);
+                            break;
+                        case "guest@mcgurkin.net":
+                            newDriver.ScreenName = $"guest {_GuestIndex}";
+                            _GuestIndex++;
+                            _Drivers.Add(newDriver);
+                            break;
+                        default:
+                            newDriver.ScreenName = newDriver.UserName;
+                            _Drivers.Add(newDriver);
+                            break;
                     }
                 }
             }
@@ -93,10 +108,15 @@ namespace Roberta.Hub.Hubs
                 Clients.All?.DriversUpdated(_Drivers);
             }
 
+            if (_Drivers.Count < 1)
+            {
+                _roboteqBackgroundService.SetXY(0, 0);
+            }
+
             if (Context.User.IsInRole("roberta.devices"))
             {
                 _LastGpsState.IsReady = false;
-                _LastRoboteqState.IsReady= false;
+                _LastRoboteqState.IsReady = false;
 
                 Clients.Caller.GpsStateUpdated(_LastGpsState);
                 Clients.Caller.RoboteqStateUpdated(_LastRoboteqState);
@@ -129,6 +149,7 @@ namespace Roberta.Hub.Hubs
         public async Task SetXY(decimal x, decimal y)
         {
             await Clients.Group(RobertaGroup).SetXY(x, y);
+            _roboteqBackgroundService.SetXY(x, y);
         }
 
         [Authorize(Roles = "roberta.admins")]
@@ -140,7 +161,6 @@ namespace Roberta.Hub.Hubs
             if (null != newDriver)
             {
                 newDriver.DriverStatusType = DriverStatusTypes.Driving;
-                await Clients.Clients(connectionId).StartDriving(string.Empty);
                 await Clients.All.DriversUpdated(_Drivers);
             }
         }
@@ -152,12 +172,11 @@ namespace Roberta.Hub.Hubs
             //await SetCommandPriority(CommandPriority.Transmitter);
         }
 
-        [Authorize(Roles = "roberta.devices")]
         public async Task UpdateGpsState(GpsState gpsState)
         {
             if (gpsState.Timestamp > _LastGpsState.Timestamp)
             {
-                await Clients.AllExcept(Context.ConnectionId).GpsStateUpdated(gpsState);
+                await Clients.All.GpsStateUpdated(gpsState);
                 _LastGpsState = gpsState;
             }
         }

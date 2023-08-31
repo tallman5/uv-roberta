@@ -1,5 +1,5 @@
 [Unit]
-Description=robcli service
+Description=Hub and API services
 After=network.target
 
 [Service]
