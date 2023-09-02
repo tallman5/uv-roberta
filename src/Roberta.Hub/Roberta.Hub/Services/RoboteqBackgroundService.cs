@@ -15,7 +15,7 @@ namespace Roberta.Hub.Services
             : base(hubContext, logger, configuration)
         {
             _portName = _configuration["Roberta:RoboteqPort"];
-            _state = new RoboteqState { Title = "Roboteq" };
+            _state = new RoboteqState { Title = "Roboteq", PowerScale = 1 };
             _SerialPort = new SerialPort
             {
                 BaudRate = 9600,
@@ -160,12 +160,15 @@ namespace Roberta.Hub.Services
             }
         }
 
+        public void SetPowerScale(decimal scale)
+        {
+            _state.PowerScale = scale;
+            _hubContext.Clients.All.SendAsync(RobertaHub.RoboteqStateUpdated, _state);
+        }
+
         public void SetXY(decimal x, decimal y)
         {
-            //var pm = PowerMixer.FromXY(x, y);
-            //string newLine = $"!M {pm.Right}, {pm.Left}";
-            //string newLine = $"!M {y}, {x}";
-            string newLine = $"!M {y - x}, {x + y}";
+            string newLine = $"!M {(y - x) * _state.PowerScale}, {(x + y) * _state.PowerScale}";
             Send(newLine);
         }
     }

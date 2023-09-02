@@ -144,6 +144,7 @@ namespace Roberta.Hub.Hubs
         public async Task SetPowerScale(decimal powerScale)
         {
             await Clients.Group(RobertaGroup).SetPowerScale(powerScale);
+            _roboteqBackgroundService.SetPowerScale(powerScale);
         }
 
         public async Task SetXY(decimal x, decimal y)

@@ -84,6 +84,21 @@ namespace Roberta.Io
             }
         }
 
+        private decimal _PowerScale;
+        [DataMember]
+        public decimal PowerScale
+        {
+            get { return this._PowerScale; }
+            set
+            {
+                if (value != this._PowerScale)
+                {
+                    this._PowerScale = value;
+                    RaisePropertyChanged(nameof(MainTemperature));
+                }
+            }
+        }
+
         private MotorState _RightMotorState;
         [DataMember]
         public MotorState RightMotorState
