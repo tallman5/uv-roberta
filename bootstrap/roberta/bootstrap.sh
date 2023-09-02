@@ -38,7 +38,7 @@ cd ~
 echo -e "\e[32mConfiguring ustreamer service...\e[0m"
 sudo useradd -r ustreamer
 sudo usermod -a -G video ustreamer
-sudo cp ~/bootstrap/ustreamer@.service /etc/systemd/system/ustreamer@.service
+sudo cp ~/bootstrap/roberta/ustreamer@.service /etc/systemd/system/ustreamer@.service
 sudo systemctl enable ustreamer@.service
 sudo systemctl enable ustreamer@0.service
 
@@ -75,23 +75,18 @@ cd ~/certs/rofo
 sudo chmod +r fullchain.pem
 sudo chmod +r privkey.pem
 
-
+# This is needed for easy access for the .NET API/Hub
 echo -e "\e[32mInstalling nginx...\e[0m"
 sudo apt-get install nginx -y
-sudo cp ~/bootstrap/ustreamer-proxy /etc/nginx/sites-available/ustreamer-proxy
+sudo cp ~/bootstrap/roberta/ustreamer-proxy /etc/nginx/sites-available/ustreamer-proxy
 sudo ln -s /etc/nginx/sites-available/ustreamer-proxy /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 
 
 echo -e "\e[32mConfiguring Roberta Hub service...\e[0m"
-sudo cp ~/bootstrap/robhub.service /etc/systemd/system/robhub.service
+sudo cp ~/bootstrap/roberta/robhub.service /etc/systemd/system/robhub.service
 sudo systemctl enable robhub.service
-
-
-echo -e "\e[32mConfiguring Roberta Client service...\e[0m"
-sudo cp ~/bootstrap/robcli.service /etc/systemd/system/robcli.service
-sudo systemctl enable robcli.service
 
 
 echo -e "\e[32mRebooting...\e[0m"
