@@ -104,7 +104,13 @@ namespace Roberta.Hub.Hubs
             var existingDriver = _Drivers.Where(d => d.ConnectionId == Context.ConnectionId).FirstOrDefault();
             if (null != existingDriver)
             {
+                var screenName = existingDriver.ScreenName;
                 _Drivers.Remove(existingDriver);
+                for (var i = _Drivers.Count; i > 0; i--)
+                {
+                    if (_Drivers[i - 1].ScreenName == screenName)
+                        _Drivers.RemoveAt(i - 1);
+                }
                 Clients.All?.DriversUpdated(_Drivers);
             }
 
