@@ -1,30 +1,33 @@
 #include <iostream>
 #include <unistd.h>
-#include "controller/controller.h"
+// #include "controller/controller.h"
 #include "rx_reader/rx_reader.h"
 #include <iomanip>
 #include <signal.h>
 #include <thread>
 
+/*
+g++ -o rob main.cpp rx_reader/rx_reader.cpp -lpigpio
+*/
+
 #define PIN 17
 #define SBUS_CHANNEL_COUNT 16
-std::chrono::system_clock::time_point lastTimestamp;
 
+std::chrono::system_clock::time_point lastTimestamp;
 RxReader reader(PIN);
-MotorController controller;
+// MotorController controller;
 
 void cleanup(int signal)
 {
-    std::cout << std::endl
-              << "Cleaning up and exiting..." << std::endl;
+    std::cout << std::endl << "Received " << signal << ", cleaning up and exiting..." << std::endl;
     reader.stop();
     exit(0);
 }
 
-void moveCursorTo(int row, int col)
-{
-    std::cout << "\033[" << row << ";" << col << "H";
-}
+// void moveCursorTo(int row, int col)
+// {
+//     std::cout << "\033[" << row << ";" << col << "H";
+// }
 
 void readerCallback(const RxReader::RxState &rxState)
 {
@@ -37,12 +40,6 @@ void readerCallback(const RxReader::RxState &rxState)
 
 int main()
 {
-#ifdef _WIN32
-    system("cls"); // For Windows
-#else
-    system("clear"); // For Unix-like systems
-#endif
-
     signal(SIGINT, cleanup);
 
     if (gpioInitialise() < 0)
@@ -53,6 +50,8 @@ int main()
 
     try
     {
+        system("clear");
+
         reader.setReaderCallback(readerCallback);
         reader.start();
 
