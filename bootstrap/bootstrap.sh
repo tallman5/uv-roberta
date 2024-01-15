@@ -24,7 +24,9 @@ sudo service vsftpd restart
 
 
 echo -e "\e[32mInstalling pigpio...\e[0m"
-sudo apt install -y pigpio
+sudo apt install pigpio python3-pigpio
+sudo systemctl start pigpiod
+sudo systemctl enable pigpiod
 
 
 echo -e "\e[32mInstalling ustreamer...\e[0m"
@@ -75,7 +77,6 @@ cd ~/certs/rofo
 sudo chmod +r fullchain.pem
 sudo chmod +r privkey.pem
 
-# This is needed for easy access for the .NET API/Hub
 echo -e "\e[32mInstalling nginx...\e[0m"
 sudo apt-get install nginx -y
 sudo cp ~/bootstrap/roberta/ustreamer-proxy /etc/nginx/sites-available/ustreamer-proxy
