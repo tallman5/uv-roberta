@@ -9,7 +9,9 @@
 #define PIN 17
 #define SBUS_CHANNEL_COUNT 16
 std::chrono::system_clock::time_point lastTimestamp;
+
 RxReader reader(PIN);
+MotorController controller;
 
 void cleanup(int signal)
 {
@@ -28,17 +30,19 @@ void readerCallback(const RxReader::RxState &rxState)
 {
     if (rxState.timestamp > lastTimestamp)
     {
+        std::cout << "New values" << std::endl;
         lastTimestamp = rxState.timestamp;
-
-        moveCursorTo(0, 0);
-        for (int i = 0; i < SBUS_CHANNEL_COUNT; i++)
-            std::cout << std::setw(4) << std::setfill('0') << rxState.channelValues[i] << "  ";
-        std::cout << std::endl;
     }
 }
 
 int main()
 {
+#ifdef _WIN32
+    system("cls"); // For Windows
+#else
+    system("clear"); // For Unix-like systems
+#endif
+
     signal(SIGINT, cleanup);
 
     if (gpioInitialise() < 0)
@@ -46,12 +50,6 @@ int main()
         std::cerr << "Failed to initialize pigpio" << std::endl;
         return 1;
     }
-
-#ifdef _WIN32
-    system("cls"); // For Windows
-#else
-    system("clear"); // For Unix-like systems
-#endif
 
     try
     {

@@ -2,7 +2,7 @@ CC = g++
 CFLAGS = -Wall -Wextra
 LIBS = -lpigpio -lrt
 
-SRCDIR = src/rob/controller
+SRCDIR = src/rob
 SRCS = $(wildcard $(SRCDIR)/*.cpp)
 OBJS = $(SRCS:.cpp=.o)
 
