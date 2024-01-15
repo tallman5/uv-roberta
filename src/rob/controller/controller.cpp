@@ -1,3 +1,4 @@
+#include <stdexcept>
 #include "controller.h"
 
 MotorController::MotorController() {
