@@ -2,10 +2,6 @@
 #include "controller.h"
 
 MotorController::MotorController() {
-    if (gpioInitialise() < 0) {
-        throw std::runtime_error("GPIO initialization failed.");
-    }
-
     gpioSetMode(L_SPEED_PIN, PI_OUTPUT);
     gpioSetMode(L_DIR_PIN, PI_OUTPUT);
     gpioSetMode(R_SPEED_PIN, PI_OUTPUT);
