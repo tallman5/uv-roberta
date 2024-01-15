@@ -1,6 +1,6 @@
 CC = g++
 CFLAGS = -Wall -Wextra
-LIBS = -lpigpio -lrt
+LIBS = -lpigpio
 
 SRCDIR = src/rob
 SRCS = $(wildcard $(SRCDIR)/*.cpp)
@@ -10,7 +10,7 @@ TARGET = rob
 
 all: $(TARGET)
 
-$(TARGET): $(OBJS) src/rob/main.cpp
+$(TARGET): $(OBJS) src/rob/rob_main.cpp
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 %.o: %.cpp

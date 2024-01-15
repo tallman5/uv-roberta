@@ -39,8 +39,6 @@ void cleanup(int signal)
     std::cout << std::endl
               << "Cleaning up and exiting..." << std::endl;
     reader.stop();
-    // close(fd);
-    // gpioTerminate();
     exit(0);
 }
 
@@ -56,17 +54,8 @@ int main()
     reader.setReaderCallback(readerCallback);
     reader.start();
 
-    // fd = open(pipePath.c_str(), O_WRONLY);
-    // if (fd < 0)
-    // {
-    //     std::cerr << "Failed to open the named pipe for writing" << std::endl;
-    //     reader.stop();
-    //     gpioTerminate();
-    //     return 1;
-    // }
-
     while (true)
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
 }

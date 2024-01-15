@@ -56,6 +56,11 @@ void RxReader::populateChannels()
     newValues.channelValues = channelValues;
     newValues.inFailsafe = !(sbusBuffer_[279] && sbusBuffer_[280]);
 
+    int scaledL = scaleValue(channelValues[0], 172, 1811, -255, 255);
+    int scaledR = scaleValue(channelValues[1], 172, 1811, -255, 255);
+    newValues.L = scaledL + scaledR;
+    newValues.R = scaledR - scaledL;
+
     if (newValues != rxState_)
     {
         newValues.timestamp = std::chrono::system_clock::now();
@@ -63,6 +68,11 @@ void RxReader::populateChannels()
         if (readerCallback_)
             readerCallback_(rxState_);
     }
+}
+
+int RxReader::scaleValue(int value, int minValue, int maxValue, int scaledMinValue, int scaledMaxValue) {
+    int scaledValue = scaledMinValue + static_cast<int>((static_cast<double>(value - minValue) / (maxValue - minValue)) * (scaledMaxValue - scaledMinValue));
+    return scaledValue;
 }
 
 void RxReader::sbusCallback(int gpio, int level, uint32_t tick)

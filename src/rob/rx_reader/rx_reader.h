@@ -26,6 +26,7 @@ public:
         std::vector<int> channelValues;
         bool inFailsafe;
         bool ch17, ch18;
+        int L, R;
         std::chrono::system_clock::time_point timestamp;
 
         bool operator==(const RxState &other) const
@@ -34,7 +35,9 @@ public:
             return (channelValues == other.channelValues &&
                     inFailsafe == other.inFailsafe &&
                     ch17 == other.ch17 &&
-                    ch18 == other.ch18);
+                    ch18 == other.ch18 && 
+                    L == other.L &&
+                    R == other.R);
         }
 
         bool operator!=(const RxState &other) const
@@ -49,6 +52,7 @@ public:
     void start();
     void stop();
     void writeBuffer();
+    int scaleValue(int value, int minValue, int maxValue, int scaledMinValue, int scaledMaxValue);
 
     void setReaderCallback(std::function<void(const RxState &)> callback);
     const RxState &getLatestRxState() const { return rxState_; }
