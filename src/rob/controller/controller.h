@@ -3,14 +3,14 @@
 
 #include <pigpio.h>
 
-class MotorController {
+class MotorController
+{
 public:
     MotorController();
     ~MotorController();
 
-    void setDirection(bool direction);
-    void setSpeed(int newSpeed);
-    void stopMotor();
+    void setLR(int l, int r);
+    void start();
 
 private:
     const int L_SPEED_PIN = 12;

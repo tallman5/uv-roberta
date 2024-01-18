@@ -21,7 +21,12 @@ void cleanup(int signal)
 {
     std::cout << std::endl
               << "Cleaning up and exiting..." << std::endl;
+
     reader.stop();
+    controller.setLR(0, 0);
+    
+    gpioTerminate();
+
     exit(0);
 }
 
@@ -47,10 +52,15 @@ void readerCallback(const RxReader::RxState &rxState)
         }
         std::cout << "17: " << rxState.ch17 << "   " << std::endl;
         std::cout << "18: " << rxState.ch18 << "   " << std::endl;
-        std::cout << "L:  " << rxState.L << "   " << std::endl;
-        std::cout << "R:  " << rxState.R << "   " << std::endl;
+        std::cout << "L:  " << rxState.L << "            " << std::endl;
+        std::cout << "R:  " << rxState.R << "            " << std::endl;
 
         lastTimestamp = rxState.timestamp;
+
+        if (rxState.inFailsafe)
+            controller.setLR(0, 0);
+        else
+            controller.setLR(rxState.L, rxState.R);
     }
 }
 
@@ -70,6 +80,7 @@ int main()
 
         reader.setReaderCallback(readerCallback);
         reader.start();
+        controller.start();
 
         while (true)
         {

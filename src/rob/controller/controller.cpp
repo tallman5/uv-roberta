@@ -1,29 +1,45 @@
+#include <iostream>
 #include <stdexcept>
 #include "controller.h"
 
-MotorController::MotorController() {
+MotorController::MotorController()
+{
+}
+
+MotorController::~MotorController()
+{
+    setLR(0, 0);
+}
+
+void MotorController::start()
+{
     gpioSetMode(L_SPEED_PIN, PI_OUTPUT);
     gpioSetMode(L_DIR_PIN, PI_OUTPUT);
     gpioSetMode(R_SPEED_PIN, PI_OUTPUT);
     gpioSetMode(R_DIR_PIN, PI_OUTPUT);
 }
 
-MotorController::~MotorController() {
-    stopMotor();
-    gpioTerminate();
-}
+void MotorController::setLR(int l, int r)
+{
+    if (l < 0)
+    {
+        gpioWrite(L_DIR_PIN, false);
+        gpioPWM(L_SPEED_PIN, l * -1);
+    }
+    else
+    {
+        gpioWrite(L_DIR_PIN, true);
+        gpioPWM(L_SPEED_PIN, l);
+    }
 
-void MotorController::setDirection(bool direction) {
-    gpioWrite(L_DIR_PIN, !direction);
-    gpioWrite(R_DIR_PIN, direction);
-}
-
-void MotorController::setSpeed(int newSpeed) {
-    gpioPWM(L_SPEED_PIN, newSpeed);
-    gpioPWM(R_SPEED_PIN, newSpeed);
-}
-
-void MotorController::stopMotor() {
-    gpioPWM(L_SPEED_PIN, 0);
-    gpioPWM(R_SPEED_PIN, 0);
+    if (r < 0)
+    {
+        gpioWrite(R_DIR_PIN, true);
+        gpioPWM(R_SPEED_PIN, r * -1);
+    }
+    else
+    {
+        gpioWrite(R_DIR_PIN, false);
+        gpioPWM(R_SPEED_PIN, r);
+    }
 }

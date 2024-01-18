@@ -56,8 +56,10 @@ void RxReader::populateChannels()
     newValues.channelValues = channelValues;
     newValues.inFailsafe = !(sbusBuffer_[279] && sbusBuffer_[280]);
 
-    int scaledL = scaleValue(channelValues[0], 172, 1811, -255, 255);
-    int scaledR = scaleValue(channelValues[1], 172, 1811, -255, 255);
+    int scaleTo = 50;
+    int scaledL = scaleValue(channelValues[0], 172, 1811, scaleTo * -1, scaleTo);
+    int scaledR = scaleValue(channelValues[1], 172, 1811, scaleTo * -1, scaleTo);
+
     newValues.L = scaledL + scaledR;
     newValues.R = scaledR - scaledL;
 
@@ -70,9 +72,10 @@ void RxReader::populateChannels()
     }
 }
 
-int RxReader::scaleValue(int value, int minValue, int maxValue, int scaledMinValue, int scaledMaxValue) {
+int RxReader::scaleValue(int value, int minValue, int maxValue, int scaledMinValue, int scaledMaxValue)
+{
     int scaledValue = scaledMinValue + static_cast<int>((static_cast<double>(value - minValue) / (maxValue - minValue)) * (scaledMaxValue - scaledMinValue));
-    return scaledValue;
+    return std::max(scaledMinValue, std::min(scaledValue, scaledMaxValue));
 }
 
 void RxReader::sbusCallback(int gpio, int level, uint32_t tick)
@@ -129,13 +132,10 @@ void RxReader::start()
         std::cerr << "Failed to set callback" << std::endl;
         return;
     }
-
-    // std::cout << "RX reader started" << std::endl;
 }
 
 void RxReader::stop()
 {
-    // moved main pigpio out to main, so, not much to do here
     std::cout << "RX reader stopped" << std::endl;
 }
 

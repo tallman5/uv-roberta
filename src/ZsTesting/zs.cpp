@@ -14,11 +14,6 @@ const int R_DIR_PIN = 23;
 const int INITIAL_SPEED = 0;  // Speed range is 0 (off) to 255 (full speed)
 
 int main() {
-    if (gpioInitialise() < 0) {
-        std::cerr << "GPIO initialization failed." << std::endl;
-        return 1;
-    }
-
     gpioSetMode(L_SPEED_PIN, PI_OUTPUT);
     gpioSetMode(L_DIR_PIN, PI_OUTPUT);
     gpioSetMode(R_SPEED_PIN, PI_OUTPUT);
