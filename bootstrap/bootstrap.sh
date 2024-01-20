@@ -3,17 +3,10 @@
 
 cd ~
 
+# echo -e "\e[32mInstalling git...\e[0m"
+# sudo apt update && sudo apt install git -y
 
 sudo apt update && sudo apt upgrade -y
-
-
-echo -e "\e[32mInstalling git...\e[0m"
-sudo apt install -y git
-
-
-# echo -e "\e[32mFix for missing /dev/serial/by-id...\e[0m"
-# sudo cp /usr/lib/udev/rules.d/60-serial.rules /usr/lib/udev/rules.d/60-serial.old
-# sudo wget -O /usr/lib/udev/rules.d/60-serial.rules https://raw.githubusercontent.com/systemd/systemd/main/rules.d/60-serial.rules
 
 
 echo -e "\e[32mInstalling FTP...\e[0m"
@@ -45,15 +38,15 @@ sudo systemctl enable ustreamer@.service
 sudo systemctl enable ustreamer@0.service
 
 
-echo -e "\e[32mInstalling .NET...\e[0m"
-curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 6.0.4xx
+# echo -e "\e[32mInstalling .NET...\e[0m"
+# curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 6.0.4xx
 
 
-echo -e "\e[32mUpdating .bashrc...\e[0m"
-echo '' >> ~/.bashrc
-echo 'export DOTNET_ROOT=/home/pi/.dotnet' >> ~/.bashrc
-echo 'export PATH=$PATH:$HOME/.dotnet' >> ~/.bashrc
-source ~/.bashrc
+# echo -e "\e[32mUpdating .bashrc...\e[0m"
+# echo '' >> ~/.bashrc
+# echo 'export DOTNET_ROOT=/home/pi/.dotnet' >> ~/.bashrc
+# echo 'export PATH=$PATH:$HOME/.dotnet' >> ~/.bashrc
+# source ~/.bashrc
 
 
 echo -e "\e[32mInstalling snapd...\e[0m"
@@ -85,9 +78,13 @@ sudo nginx -t
 sudo systemctl reload nginx
 
 
-echo -e "\e[32mConfiguring Roberta Hub service...\e[0m"
-sudo cp ~/bootstrap/roberta/robhub.service /etc/systemd/system/robhub.service
-sudo systemctl enable robhub.service
+# echo -e "\e[32mConfiguring Roberta Hub service...\e[0m"
+# sudo cp ~/bootstrap/roberta/robhub.service /etc/systemd/system/robhub.service
+# sudo systemctl enable robhub.service
+
+# echo -e "\e[32mFix for missing /dev/serial/by-id...\e[0m"
+# sudo cp /usr/lib/udev/rules.d/60-serial.rules /usr/lib/udev/rules.d/60-serial.old
+# sudo wget -O /usr/lib/udev/rules.d/60-serial.rules https://raw.githubusercontent.com/systemd/systemd/main/rules.d/60-serial.rules
 
 
 echo -e "\e[32mRebooting...\e[0m"
