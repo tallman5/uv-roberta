@@ -33,8 +33,8 @@ cd ~
 echo -e "\e[32mConfiguring ustreamer service...\e[0m"
 sudo useradd -r ustreamer
 sudo usermod -a -G video ustreamer
-sudo cp ~/bootstrap/roberta/ustreamer@.service /etc/systemd/system/ustreamer@.service
-sudo systemctl enable ustreamer@.service
+sudo cp ~/uv-roberta/bootstrap/ustreamer@.service /etc/systemd/system/ustreamer@.service
+# sudo systemctl enable ustreamer@.service
 sudo systemctl enable ustreamer@0.service
 
 
@@ -72,7 +72,7 @@ sudo chmod +r privkey.pem
 
 echo -e "\e[32mInstalling nginx...\e[0m"
 sudo apt-get install nginx -y
-sudo cp ~/bootstrap/roberta/ustreamer-proxy /etc/nginx/sites-available/ustreamer-proxy
+sudo cp ~/uv-roberta/bootstrap/ustreamer-proxy /etc/nginx/sites-available/ustreamer-proxy
 sudo ln -s /etc/nginx/sites-available/ustreamer-proxy /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
