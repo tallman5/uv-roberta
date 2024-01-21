@@ -137,12 +137,17 @@ void RxReader::start()
 
 void RxReader::stop()
 {
+    // Clearing the callback
+    if (gpioSetAlertFuncEx(gpioPin_, NULL, NULL) < 0)
+    {
+        std::cerr << "Failed to clear callback" << std::endl;
+    }
     std::cout << "RX reader stopped" << std::endl;
 }
 
-void RxReader::writeBuffer()
-{
-    for (int i = 0; i < PACKET_LENGTH; i++)
-        std::cout << sbusBuffer_[i];
-    std::cout << std::endl;
-}
+// void RxReader::writeBuffer()
+// {
+//     for (int i = 0; i < PACKET_LENGTH; i++)
+//         std::cout << sbusBuffer_[i];
+//     std::cout << std::endl;
+// }

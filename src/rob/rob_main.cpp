@@ -23,10 +23,10 @@ void cleanup(int signal)
     std::cout << std::endl
               << "Cleaning up and exiting..." << std::endl;
 
-    reader.stop();
     controller.setLR(0, 0);
+    reader.stop();
 
-    // gpioTerminate();
+    gpioTerminate();
 
     exit(0);
 }
@@ -69,25 +69,24 @@ int main()
 {
     signal(SIGINT, cleanup);
 
-    gpioInitialise()
-    // if (gpioInitialise() < 0)
-    // {
-    //     std::cerr << "Failed to initialize pigpio" << std::endl;
-    //     return 1;
-    // }
+    if (gpioInitialise() < 0)
+    {
+        std::cerr << "Failed to initialize pigpio" << std::endl;
+        return 1;
+    }
 
     try
     {
         system("clear");
 
-        // reader.setReaderCallback(readerCallback);
-        // reader.start();
-        // controller.start();
+        reader.setReaderCallback(readerCallback);
+        reader.start();
+        controller.start();
 
-        // while (true)
-        // {
-        //     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        // }
+        while (true)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10h000));
+        }
     }
     catch (const std::exception &e)
     {

@@ -51,7 +51,7 @@ public:
 
     void start();
     void stop();
-    void writeBuffer();
+    // void writeBuffer();
     int scaleValue(int value, int minValue, int maxValue, int scaledMinValue, int scaledMaxValue);
 
     void setReaderCallback(std::function<void(const RxState &)> callback);
