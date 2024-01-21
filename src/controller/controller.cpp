@@ -8,7 +8,7 @@ MotorController::MotorController()
 
 MotorController::~MotorController()
 {
-    setLR(0, 0);
+    // setLR(0, 0);
 }
 
 void MotorController::start()

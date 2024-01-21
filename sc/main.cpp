@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <signal.h>
 #include <thread>
+#include <pigpio.h>
 
 /*
 g++ -o rob rob_main.cpp rx_reader/rx_reader.cpp controller/controller.cpp -lpigpio

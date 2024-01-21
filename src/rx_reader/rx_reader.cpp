@@ -7,7 +7,7 @@ RxReader::RxReader(int gpioPin)
 
 RxReader::~RxReader()
 {
-    stop();
+    // stop();
 }
 
 void RxReader::populateChannels()
