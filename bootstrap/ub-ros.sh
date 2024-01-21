@@ -24,4 +24,4 @@ sudo apt upgrade -y
 
 sudo apt install ros-iron-ros-base -y
 
-source /opt/ros/iron/setup.bash
+source /opt/ros/iron/setup.sh

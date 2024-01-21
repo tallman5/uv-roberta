@@ -25,7 +25,7 @@ void cleanup(int signal)
     reader.stop();
     controller.setLR(0, 0);
     
-    gpioTerminate();
+    // gpioTerminate();
 
     exit(0);
 }
@@ -68,11 +68,11 @@ int main()
 {
     signal(SIGINT, cleanup);
 
-    if (gpioInitialise() < 0)
-    {
-        std::cerr << "Failed to initialize pigpio" << std::endl;
-        return 1;
-    }
+    // if (gpioInitialise() < 0)
+    // {
+    //     std::cerr << "Failed to initialize pigpio" << std::endl;
+    //     return 1;
+    // }
 
     try
     {

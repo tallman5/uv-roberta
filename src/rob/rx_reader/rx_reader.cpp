@@ -56,12 +56,13 @@ void RxReader::populateChannels()
     newValues.channelValues = channelValues;
     newValues.inFailsafe = !(sbusBuffer_[279] && sbusBuffer_[280]);
 
-    int scaleTo = 50;
+    int scaleTo = 255;
+    int scaleFrom = scaleTo * -1;
     int scaledL = scaleValue(channelValues[0], 172, 1811, scaleTo * -1, scaleTo);
     int scaledR = scaleValue(channelValues[1], 172, 1811, scaleTo * -1, scaleTo);
 
-    newValues.L = scaledL + scaledR;
-    newValues.R = scaledR - scaledL;
+    newValues.L = std::max(scaleFrom, std::min(scaledL + scaledR, scaleTo));
+    newValues.R = std::max(scaleFrom, std::min(scaledR - scaledL, scaleTo));
 
     if (newValues != rxState_)
     {
