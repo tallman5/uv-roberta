@@ -8,6 +8,7 @@
 
 /*
 g++ -o rob rob_main.cpp rx_reader/rx_reader.cpp controller/controller.cpp -lpigpio
+g++ -o rob uv-roberta/src/rob/rob_main.cpp uv-roberta/src/rob/rx_reader/rx_reader.cpp uv-roberta/src/rob/controller/controller.cpp -lpigpio
 */
 
 #define PIN 17
@@ -24,7 +25,7 @@ void cleanup(int signal)
 
     reader.stop();
     controller.setLR(0, 0);
-    
+
     // gpioTerminate();
 
     exit(0);
@@ -68,6 +69,7 @@ int main()
 {
     signal(SIGINT, cleanup);
 
+    gpioInitialise()
     // if (gpioInitialise() < 0)
     // {
     //     std::cerr << "Failed to initialize pigpio" << std::endl;
@@ -78,14 +80,14 @@ int main()
     {
         system("clear");
 
-        reader.setReaderCallback(readerCallback);
-        reader.start();
-        controller.start();
+        // reader.setReaderCallback(readerCallback);
+        // reader.start();
+        // controller.start();
 
-        while (true)
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        }
+        // while (true)
+        // {
+        //     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        // }
     }
     catch (const std::exception &e)
     {
