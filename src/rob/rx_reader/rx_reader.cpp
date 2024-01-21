@@ -145,9 +145,9 @@ void RxReader::stop()
     std::cout << "RX reader stopped" << std::endl;
 }
 
-// void RxReader::writeBuffer()
-// {
-//     for (int i = 0; i < PACKET_LENGTH; i++)
-//         std::cout << sbusBuffer_[i];
-//     std::cout << std::endl;
-// }
+void RxReader::writeBuffer()
+{
+    for (int i = 0; i < PACKET_LENGTH; i++)
+        std::cout << sbusBuffer_[i];
+    std::cout << std::endl;
+}
