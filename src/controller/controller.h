@@ -15,8 +15,10 @@ public:
 private:
     const int L_SPEED_PIN = 12;
     const int L_DIR_PIN = 24;
+    const int L_STOP_PIN = 24;
     const int R_SPEED_PIN = 13;
     const int R_DIR_PIN = 23;
+    const int R_STOP_PIN = 23;
 };
 
 #endif // CONTROLLER_H

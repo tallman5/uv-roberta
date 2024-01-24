@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include "controller/controller.h"
 #include "rx_reader/rx_reader.h"
+#include "pid/pidController.h"
 #include <iomanip>
 #include <csignal>
 #include <atomic>
@@ -9,8 +10,7 @@
 #include <pigpio.h>
 
 /*
-g++ -o rob rob_main.cpp rx_reader/rx_reader.cpp controller/controller.cpp -lpigpio
-g++ -o rob uv-roberta/src/rob/rob_main.cpp uv-roberta/src/rob/rx_reader/rx_reader.cpp uv-roberta/src/rob/controller/controller.cpp -lpigpio
+g++ -o rob rob_main.cpp rx_reader/rx_reader.cpp controller/controller.cpp pid/pidContoller.cpp -lpigpio
 */
 
 #define PIN 17
@@ -25,7 +25,7 @@ void handleSignal(int signal)
 {
     if (signal == SIGINT)
     {
-        std::cout << "\nCtrl+C pressed. Shutting down..." << std::endl;
+        std::cout << "\nCtrl+C pressed. Shutting down..." << std::endl << std::endl;
         running = false;
     }
 }
