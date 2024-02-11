@@ -15,8 +15,10 @@ void MotorController::start()
 {
     gpioSetMode(L_SPEED_PIN, PI_OUTPUT);
     gpioSetMode(L_DIR_PIN, PI_OUTPUT);
+    gpioSetMode(L_STOP_PIN, PI_OUTPUT);
     gpioSetMode(R_SPEED_PIN, PI_OUTPUT);
     gpioSetMode(R_DIR_PIN, PI_OUTPUT);
+    gpioSetMode(R_STOP_PIN, PI_OUTPUT);
 }
 
 void MotorController::setLR(int l, int r)
