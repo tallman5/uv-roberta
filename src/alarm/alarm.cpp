@@ -8,6 +8,9 @@
 #include <chrono>
 #include <thread>
 #include <pigpio.h>
+#include <ctime>
+#include <sstream>
+#include <iomanip>
 
 /*
 g++ -o alarm alarm.cpp -lpigpiod_if2 -pthread
@@ -18,6 +21,24 @@ std::chrono::steady_clock::time_point last_call = std::chrono::steady_clock::now
 volatile sig_atomic_t interrupted = 0;
 bool quietMode = false;
 
+std::string getCurrentDateTime()
+{
+    // Get current time as a time_point
+    auto now = std::chrono::system_clock::now();
+
+    // Convert to a time_t object
+    std::time_t now_c = std::chrono::system_clock::to_time_t(now);
+
+    // Convert to local time
+    std::tm *now_tm = std::localtime(&now_c);
+
+    // Use stringstream to format the date and time
+    std::stringstream ss;
+    ss << std::put_time(now_tm, "%Y-%m-%d %H:%M:%S");
+
+    return ss.str();
+}
+
 void connectBluetoothSpeaker(const std::string &btAddress)
 {
     std::string command = "bluetoothctl connect " + btAddress;
@@ -26,13 +47,14 @@ void connectBluetoothSpeaker(const std::string &btAddress)
 
 void setVolume(int volume)
 {
+    std::cout << getCurrentDateTime() << ": Setting volume to " << volume << "%" << std::endl;
     std::string command = "amixer set Master " + std::to_string(volume) + "%";
     std::system(command.c_str());
 }
 
 void executeCommand(int volume)
 {
-    std::cout << "Playing alarm.wav at a volumt of " << volume << "%" << std::endl;
+    std::cout << getCurrentDateTime() << ": Playing alarm.wav at a volumt of " << volume << "%" << std::endl;
     setVolume(volume);
     system("aplay alarm.wav");
     setVolume(0);
@@ -43,13 +65,14 @@ void gpioCallback(int pi, unsigned user_gpio, unsigned level, uint32_t tick)
     auto now = std::chrono::steady_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - last_call).count();
 
-    std::cout << "elaspsed: " << elapsed << "|pi: " << pi << "|gpio: " << user_gpio << "|level: " << level << "|tick: " << tick << std::endl;
+    std::cout << getCurrentDateTime() << ": level: " << level << std::endl;
 
     if (elapsed >= 60 && level == 1)
     {
         last_call = now;
         if (!quietMode)
         {
+            std::cout << getCurrentDateTime() << ": Alarm Triggered" << std::endl;
             std::thread soundThread(executeCommand, 100);
             soundThread.detach();
         }
@@ -87,6 +110,7 @@ int main(int argc, char *argv[])
         std::string arg(argv[i]);
         if (arg == "-q")
         {
+            std::cout << getCurrentDateTime() << ": Setting mode to quiet" << std::endl;
             quietMode = true;
             break;
         }
@@ -94,17 +118,15 @@ int main(int argc, char *argv[])
 
     if (!quietMode)
     {
-
-        // Connect Bluetooth speaker
         std::string btSpeakerAddress = "98:52:3D:C2:57:51";
         if (!isBluetoothSpeakerConnected(btSpeakerAddress))
         {
-            std::cout << "Connecting to Bluetooth speaker..." << std::endl;
+            std::cout << getCurrentDateTime() << ": Connecting to Bluetooth speaker..." << std::endl;
             connectBluetoothSpeaker(btSpeakerAddress);
         }
         else
         {
-            std::cout << "Bluetooth speaker already connected." << std::endl;
+            std::cout << getCurrentDateTime() << ": Bluetooth speaker already connected." << std::endl;
         }
     }
 
@@ -123,7 +145,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    std::cout << "Waiting for GPIO17 to change state. Press CTRL+C to exit." << std::endl;
+    std::cout << getCurrentDateTime() << ": Waiting for GPIO17 to change state. Press CTRL+C to exit." << std::endl;
 
     auto startTime = std::chrono::steady_clock::now();
 
@@ -142,6 +164,6 @@ int main(int argc, char *argv[])
 
     callback_cancel(callback_id);
     pigpio_stop(pi);
-    std::cout << "Program terminated gracefully." << std::endl;
+    std::cout << getCurrentDateTime() << ": Program terminated gracefully." << std::endl;
     return 0;
 }
