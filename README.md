@@ -1,11 +1,13 @@
-# UV Roberta
-
 ![](bom/images/roberta-render.png)
+
+# UV Roberta
+UV Roberta is an R/C controlled wheeled robot running on a Raspberry Pi.
 
 ## Links
 |Item|Link|
 |---|---|
-|Fusion 360 Design|[Roberta v21.f3z](cad/Roberta%20v21.f3z)|
+|BOM|[bom/roberta-bom.md](bom/roberta-bom.md)|
+|Fusion 360 Design|[cad/roberta.f3z](cad/roberta.f3z)|
 |Roboteq Contoller|[https://www.roboteq.com/products/products-brushed-dc-motor-controllers/mdc2460-274-detail](https://www.roboteq.com/products/products-brushed-dc-motor-controllers/mdc2460-274-detail)|
 
 ## Pevious Version
