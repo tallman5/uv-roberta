@@ -122,7 +122,9 @@ RcDriveConfig load_rc_drive_config(const std::string& path) {
         } else if (key == "receiver_timeout_ms") {
             config.receiver_timeout_ms = parse_int(value, key);
         } else if (key == "roboteq_device") {
-            config.roboteq_device = value;
+            if (!value.empty()) {
+                config.roboteq_device = value;
+            }
         } else if (key == "roboteq_baud") {
             config.roboteq_baud = parse_int(value, key);
         } else if (key == "max_motor_command") {
@@ -193,7 +195,7 @@ void save_rc_drive_config(const std::string& path, const RcDriveConfig& config) 
         if (!output) {
             throw std::runtime_error("Cannot write temporary config file: " + temporary.string());
         }
-        output << "# RC-only Phase 1 drive configuration. Calibrate the sticks before arming.\n"
+        output << "# Manual RC drive configuration. Calibrate the sticks before arming.\n"
                << "receiver_gpio=" << config.receiver_gpio << '\n'
                << "throttle_channel=" << config.mapping.throttle_channel + 1 << '\n'
                << "throttle_min=" << config.mapping.throttle.minimum << '\n'

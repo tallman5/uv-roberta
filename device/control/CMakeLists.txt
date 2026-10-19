@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(RobertaControl LANGUAGES CXX)
 
-option(ROBERTA_BUILD_DRIVE_RUNTIME "Build the later-phase motor-driving runtime" OFF)
+option(ROBERTA_BUILD_DRIVE_RUNTIME "Build the manual RC motor-driving runtime" OFF)
 option(ROBERTA_BUILD_PI_TARGETS "Build Raspberry Pi executables requiring pigpio" OFF)
 
 enable_testing()

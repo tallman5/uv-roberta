@@ -1,5 +1,5 @@
 [Unit]
-Description=UV Roberta Phase 1 RC drive control
+Description=UV Roberta RC drive control
 After=pigpiod.service
 Requires=pigpiod.service
 

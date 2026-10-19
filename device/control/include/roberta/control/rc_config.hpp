@@ -16,7 +16,8 @@ struct RcDriveConfig {
         0.04
     };
     int receiver_timeout_ms{100};
-    std::string roboteq_device;
+    std::string roboteq_device{
+        "/dev/serial/by-id/usb-Roboteq_Motor_Controller_MDC2XXX-if00"};
     int roboteq_baud{9600};
     int max_motor_command{200};
     int left_motor_channel{2};

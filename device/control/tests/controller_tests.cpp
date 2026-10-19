@@ -317,8 +317,14 @@ int main() {
         });
 
         run("RC configuration is parsed and validated before arming", [&] {
+            const roberta::control::RcDriveConfig defaults;
+            require(
+                defaults.roboteq_device ==
+                    "/dev/serial/by-id/usb-Roboteq_Motor_Controller_MDC2XXX-if00",
+                "default Roboteq device path was incorrect");
+
             const auto path = std::filesystem::temp_directory_path() / "roberta-rc-config-test.conf";
-            {
+            const auto write_config = [&](const std::string& roboteq_device) {
                 std::ofstream output(path);
                 output << "receiver_gpio=17\n"
                        << "throttle_channel=2\n"
@@ -333,7 +339,7 @@ int main() {
                        << "steering_inverted=true\n"
                        << "deadband=0.05\n"
                        << "receiver_timeout_ms=100\n"
-                       << "roboteq_device=/dev/serial/by-id/controller\n"
+                       << "roboteq_device=" << roboteq_device << '\n'
                        << "roboteq_baud=9600\n"
                        << "max_motor_command=200\n"
                        << "left_motor_channel=2\n"
@@ -341,15 +347,25 @@ int main() {
                        << "left_motor_inverted=false\n"
                        << "right_motor_inverted=true\n"
                        << "arm_neutral_ms=2000\n";
-            }
+            };
 
+            write_config("/dev/serial/by-id/controller");
             const auto config = roberta::control::load_rc_drive_config(path.string());
             require(config.mapping.throttle_channel == 1, "one-based throttle channel was parsed incorrectly");
             require(config.mapping.steering_channel == 0, "one-based steering channel was parsed incorrectly");
             require(config.mapping.steering.inverted, "steering inversion was parsed incorrectly");
+            require(
+                config.roboteq_device == "/dev/serial/by-id/controller",
+                "Roboteq device path override was not parsed");
             require(config.left_motor_channel == 2 && config.right_motor_channel == 1,
                 "Roboteq motor-channel mapping was parsed incorrectly");
             roberta::control::validate_rc_drive_config(config, true);
+
+            write_config("");
+            const auto default_path_config = roberta::control::load_rc_drive_config(path.string());
+            require(
+                default_path_config.roboteq_device == defaults.roboteq_device,
+                "empty Roboteq device setting did not use the default");
             std::filesystem::remove(path);
         });
 

@@ -70,21 +70,36 @@ mkdir -p "${build_dir}"
 cmake -S "${ROOT_DIR}" -B "${build_dir}" \
   -DCMAKE_BUILD_TYPE=Release \
   -DROBERTA_BUILD_PI_TARGETS=ON \
-  -DROBERTA_BUILD_DRIVE_RUNTIME=OFF
-cmake --build "${build_dir}" --target roberta_rc_monitor --parallel
+  -DROBERTA_BUILD_DRIVE_RUNTIME=ON
+cmake --build "${build_dir}" --target roberta_rc_monitor roberta_rc_drive --parallel
 install -o root -g root -m 0755 \
   "${build_dir}/device/control/roberta_rc_monitor" \
   /usr/local/bin/roberta_rc_monitor
+install -o root -g root -m 0755 \
+  "${build_dir}/device/control/roberta_rc_drive" \
+  /usr/local/bin/roberta_rc_drive
+
+config_dir="/etc/uv-roberta"
+config_file="${config_dir}/rc-drive.conf"
+install -d -o root -g root -m 0755 "${config_dir}"
+if [[ ! -e "${config_file}" ]]; then
+  install -o root -g root -m 0644 \
+    "${ROOT_DIR}/device/control/config/rc-drive.conf.example" \
+    "${config_file}"
+  echo "Installed an example drive config at ${config_file}; it must be reviewed before arming."
+else
+  echo "Keeping existing drive config at ${config_file}."
+fi
 
 echo
-echo "Installed the RC receiver monitor. It cannot command the motor controller."
+echo "Installed the RC monitor and manual RC drive executable."
 echo
 echo "Next:"
 echo "  1. Confirm receiver signal voltage is safe for the Pi GPIO (3.3 V maximum)."
-echo "  2. Connect SBUS signal to BCM GPIO 17 and share ground with the Pi."
-echo "  3. Run: /usr/local/bin/roberta_rc_monitor"
-echo "     Use --gpio BCM_PIN if your signal is connected to a different pin."
-echo "  4. Move sticks and switches; observe SBUS channels 1-18 and link status."
+echo "  2. Confirm receiver signal wiring on BCM GPIO 17 (or edit receiver_gpio)."
+echo "  3. Run /usr/local/bin/roberta_rc_monitor and identify your stick channels."
+echo "  4. Follow docs/phase2-drive-setup.md to configure and calibrate before driving."
+echo "     The drive executable is not installed as or started by a service."
 if [[ -e /var/run/reboot-required ]]; then
   echo
   echo "A system update requires a reboot. Reboot before running the monitor."

@@ -4,7 +4,7 @@ Phase 1 has one purpose: confirm that the FrSky Taranis X9 Lite transmitter and 
 
 `Taranis X9 Lite → XM+ SBUS → Raspberry Pi console monitor`
 
-The monitor displays all 16 analog channels, the SBUS digital channels 17 and 18, and whether frames are current, stale, lost, or marked failsafe. It has no motor-controller interface and cannot drive the robot. Do not connect or power the drive motors for this test.
+The monitor displays all 16 analog channels, the SBUS digital channels 17 and 18, and whether frames are current, stale, lost, or marked failsafe. This monitor mode does not open or command the motor controller. For wheel control, first complete the monitor checks and then follow [the Phase 2 drive guide](phase2-drive-setup.md).
 
 ## Wiring and safety
 
@@ -25,9 +25,9 @@ cd uv-roberta-v2
 sudo bash scripts/setup-rpi4.sh
 ```
 
-The installer checks for Raspberry Pi OS and Pi 4 hardware, updates installed OS packages, installs Git and any missing build/pigpio dependencies, ensures `pigpiod` is enabled and running, builds the monitor, and installs it as `/usr/local/bin/roberta_rc_monitor`. It is safe to rerun: installed dependencies and a running/enabled daemon are detected, while the monitor is rebuilt and updated from the checked-out source each time. It does not configure or start a motor-control service and does not create a drive configuration. If a system update requires rebooting, the installer reports that at the end.
+The installer checks for Raspberry Pi OS and Pi 4 hardware, updates installed OS packages, installs Git and any missing build/pigpio dependencies, ensures `pigpiod` is enabled and running, builds the monitor and manual drive executable, and installs both under `/usr/local/bin`. It creates `/etc/uv-roberta/rc-drive.conf` from the example only if no config exists; this file must be reviewed and configured before drive mode can open the Roboteq. It is safe to rerun: installed dependencies and a running/enabled daemon are detected, existing configuration is kept, and both executables are rebuilt. It does not install, configure, enable, or start a motor-control service. If a system update requires rebooting, the installer reports that at the end.
 
-If you previously installed the drive service, stop and disable it before this RC-only test:
+If you previously installed an older drive service, stop and disable it before testing in monitor-only mode:
 
 ```bash
 sudo systemctl disable --now roberta-rc-drive.service
@@ -63,7 +63,7 @@ Stop the monitor with Ctrl-C.
 - Turn off the transmitter briefly. The display should indicate stale frames or receiver failsafe rather than implying a live healthy signal.
 - Turn the transmitter back on and confirm fresh channel values return.
 
-The monitor prints raw SBUS values; it does not assign semantic names to channels or calibrate endpoints. Record the channel numbers and observed ranges for sticks and switches. This information will inform a later control phase.
+The monitor prints raw SBUS values; it does not assign semantic names to channels or calibrate endpoints. Record the channel numbers and observed ranges for the throttle and steering sticks. This information is needed to configure and calibrate drive mode in [Phase 2](phase2-drive-setup.md).
 
 ## If no valid frames appear
 
@@ -72,4 +72,4 @@ The monitor prints raw SBUS values; it does not assign semantic names to channel
 3. Confirm `pigpiod` is active and the receiver output is SBUS rather than a different protocol.
 4. Check that the SBUS signal is electrically compatible with the Pi GPIO. Use an appropriate inverter/level shifter if required by the receiver's output; do not experiment with a potentially 5 V signal connected directly.
 
-No Roboteq, motor, dashboard, API, GPS, or camera setup is part of Phase 1.
+This Phase 1 procedure does not configure or command the Roboteq or motors. Dashboard, API, GPS, and camera setup are also outside this receiver test. See [Phase 2](phase2-drive-setup.md) before attempting any wheel control.

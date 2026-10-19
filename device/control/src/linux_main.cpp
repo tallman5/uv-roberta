@@ -194,10 +194,18 @@ void run_armed(
         const auto now = steady_clock::now();
         const auto frame = receiver.read(now);
         const bool receiver_valid = frame.has_value();
-        if (armed && last_receiver_valid && *last_receiver_valid != receiver_valid) {
-            std::cerr << (receiver_valid
-                ? "RC receiver frames restored."
-                : "RC receiver lost/failsafe; stopping both motors.") << std::endl;
+        if (last_receiver_valid && *last_receiver_valid != receiver_valid) {
+            if (receiver_valid) {
+                std::cerr << "RC receiver frames restored; drive remains disarmed until both sticks are neutral."
+                          << std::endl;
+            } else {
+                std::cerr << "RC receiver lost/failsafe; stopping both motors and disarming."
+                          << std::endl;
+            }
+        }
+        if (armed && !receiver_valid) {
+            armed = false;
+            neutral_timer_active = false;
         }
         last_receiver_valid = receiver_valid;
         if (!armed) {

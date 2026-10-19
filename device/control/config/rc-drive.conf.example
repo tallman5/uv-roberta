@@ -1,4 +1,4 @@
-# The setup script writes /etc/uv-roberta/rc-drive.conf.
+# The setup script installs this example at /etc/uv-roberta/rc-drive.conf if absent.
 # Stick channels and SBUS calibration values must be checked with --monitor/--calibrate.
 receiver_gpio=17
 throttle_channel=2
@@ -13,7 +13,7 @@ steering_max=1811
 steering_inverted=false
 deadband=0.04
 receiver_timeout_ms=100
-roboteq_device=
+roboteq_device=/dev/serial/by-id/usb-Roboteq_Motor_Controller_MDC2XXX-if00
 roboteq_baud=9600
 max_motor_command=200
 left_motor_channel=2

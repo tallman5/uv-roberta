@@ -1,17 +1,18 @@
-# UV Roberta v2 — Phase 1 RC receiver test
+# UV Roberta v2 — RC receiver and manual drive
 
-Phase 1 is limited to confirming the radio link:
+Phase 1 confirms the radio link:
 
 `FrSky Taranis X9 Lite → XM+ SBUS → Raspberry Pi 4 console monitor`
 
-The C++ console app displays all 16 SBUS analog channels, digital channels 17/18, and reports stale frames, frame loss, and receiver failsafe. It cannot open or command the motor controller. No dashboard, API, GPS, cameras, device agent, or motor control is in Phase 1.
+The C++ monitor displays all 16 SBUS analog channels, digital channels 17/18, and reports stale frames, frame loss, and receiver failsafe. Phase 2 adds a separate manually started executable to control the Roboteq MDC2250 and wheels from the transmitter. See [the Phase 1 setup guide](docs/phase1-setup.md) for receiver commissioning and [the Phase 2 drive guide](docs/phase2-drive-setup.md) for motor configuration and testing.
 
-- `device/control/`: SBUS decoding, hardware-free decoder tests, and the Pi receiver monitor.
-- `scripts/setup-rpi4.sh`: installs Pi dependencies and the monitor executable.
+- `device/control/`: SBUS decoding, control policy, hardware-free tests, and the Pi monitor and drive executables.
+- `scripts/setup-rpi4.sh`: installs Pi dependencies, both executables, and an example drive configuration.
 - `docs/phase1-setup.md`: receiver wiring, install, and radio-link test procedure.
-- `api/`, `web/`, `device/agent/`, and the motor-control code: later-phase work, not used by Phase 1.
+- `docs/phase2-drive-setup.md`: Roboteq configuration, stick calibration, and manual drive test procedure.
+- `api/`, `web/`, and `device/agent/`: later-phase work, not used by the local RC drive executable.
 
-Check receiver supply, common ground, and signal voltage before connecting to GPIO. Raspberry Pi GPIO is not 5 V tolerant; the SBUS signal must be verified at no more than 3.3 V.
+Check receiver supply, common ground, and signal voltage before connecting to GPIO. Raspberry Pi GPIO is not 5 V tolerant; the SBUS signal must be verified at no more than 3.3 V. Before any motor test, follow the Phase 2 guide's independent emergency-stop and controller-watchdog checks.
 
 ## Build and test
 
@@ -23,4 +24,4 @@ cmake --build build --config Release
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-On Raspberry Pi OS, follow [the Phase 1 setup guide](docs/phase1-setup.md). The monitor reads the SBUS signal on BCM GPIO 17 by default; select another pin with `--gpio`.
+On Raspberry Pi OS, follow [the Phase 1 setup guide](docs/phase1-setup.md). The monitor reads the SBUS signal on BCM GPIO 17 by default; select another pin with `--gpio`. The setup script also builds and installs the manual drive executable, but does not start it or install a service.
