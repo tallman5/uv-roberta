@@ -28,7 +28,7 @@ LinuxSbusReceiver::LinuxSbusReceiver(
     callback_id_ = callback_ex(
             pigpio_handle_,
             static_cast<unsigned>(gpio_pin_),
-            PI_EITHER_EDGE,
+            EITHER_EDGE,
             &LinuxSbusReceiver::alert_callback,
             this);
     if (callback_id_ < 0) {

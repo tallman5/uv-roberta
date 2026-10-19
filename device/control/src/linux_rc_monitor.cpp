@@ -120,7 +120,7 @@ int main(int argc, char** argv) {
             (callback_id = callback_ex(
                 static_cast<unsigned>(pigpio_handle),
                 options.gpio,
-                PI_EITHER_EDGE,
+                EITHER_EDGE,
                 alert_callback,
                 &state)) < 0) {
             throw std::runtime_error(
