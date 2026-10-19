@@ -84,6 +84,8 @@ std::optional<SbusFrame> decode_sbus_frame(
     }
 
     const auto flags = bytes[23];
+    frame.channel_17 = (flags & 0x01U) != 0;
+    frame.channel_18 = (flags & 0x02U) != 0;
     frame.frame_lost = (flags & 0x04U) != 0;
     frame.failsafe = (flags & 0x08U) != 0;
     return frame;

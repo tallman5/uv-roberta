@@ -231,6 +231,17 @@ int main() {
             require(decoded.has_value(), "valid SBUS frame was not decoded");
             require(decoded->channels == channels, "SBUS channel values were decoded incorrectly");
 
+            const auto digital = encode_sbus(channels, 0x03);
+            decoded.reset();
+            for (const auto byte : digital) {
+                if (auto frame = decoder.feed(byte)) {
+                    decoded = frame;
+                }
+            }
+            require(
+                decoded && decoded->channel_17 && decoded->channel_18,
+                "SBUS digital channels 17 and 18 were not decoded");
+
             const auto lost = encode_sbus(channels, 0x04);
             decoded.reset();
             for (const auto byte : lost) {

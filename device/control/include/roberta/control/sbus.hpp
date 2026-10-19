@@ -10,6 +10,8 @@ namespace roberta::control {
 
 struct SbusFrame {
     std::array<std::uint16_t, 16> channels{};
+    bool channel_17{};
+    bool channel_18{};
     bool frame_lost{};
     bool failsafe{};
 };

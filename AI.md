@@ -14,7 +14,7 @@ UV Roberta v2 is a Raspberry Pi 4–based, remotely observable and controllable 
 
 ### Current implementation phase
 
-Phase 1 is a local RC-only MVP: Taranis X9 Lite → XM+ SBUS → Raspberry Pi 4 → Roboteq MDC2250 → drive motors. Do not add GPS, cameras, API/hub, dashboard, remote control, or transmitter-switch features to the Phase 1 runtime. Keep the other architecture and contracts below as later-phase context; they are not required to build or operate the Phase 1 robot.
+Phase 1 is limited to testing the RC transmitter/receiver link: Taranis X9 Lite → XM+ SBUS → Raspberry Pi 4 console monitor. The monitor displays SBUS channels 1-16 and digital channels 17/18, along with signal/failsafe status; it must not control or open the motor controller. Do not add motor driving, GPS, cameras, API/hub, dashboard, or remote control to the Phase 1 runtime. Keep the other architecture and contracts below as later-phase context; they are not required to test the Phase 1 RC link.
 
 The software direction is to use C++ for low-level, timing-sensitive hardware control wherever it is practical, and Qwik with Bootstrap for the web dashboard.
 
@@ -32,7 +32,7 @@ The software direction is to use C++ for low-level, timing-sensitive hardware co
 
 The Pi hosts the hardware agent and device services:
 
-- A C++ control process reads the RC receiver and controls the Roboteq controller.
+- A C++ console utility reads the RC receiver for bring-up and testing. Motor control is a later phase.
 - GPS receivers are read locally; the software validates and timestamps fixes before publishing them.
 - Camera streaming is handled by a camera/streaming service such as the existing `ustreamer` setup, rather than by the motor control loop.
 - A device agent sends telemetry to the API/hub and receives authorized operator commands.

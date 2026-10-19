@@ -1,23 +1,17 @@
-# UV Roberta v2 — Phase 1 MVP
+# UV Roberta v2 — Phase 1 RC receiver test
 
-The current MVP is **local RC-only driving**:
+Phase 1 is limited to confirming the radio link:
 
-`FrSky Taranis X9 Lite → XM+ SBUS → Raspberry Pi 4 → Roboteq MDC2250 → drive motors`
+`FrSky Taranis X9 Lite → XM+ SBUS → Raspberry Pi 4 console monitor`
 
-Phase 1 does not use the API, dashboard, GPS, cameras, device agent, remote driving, or transmitter switches. Those are later-phase items.
+The C++ console app displays all 16 SBUS analog channels, digital channels 17/18, and reports stale frames, frame loss, and receiver failsafe. It cannot open or command the motor controller. No dashboard, API, GPS, cameras, device agent, or motor control is in Phase 1.
 
-- `device/control/`: C++20 SBUS capture/decoding, stick calibration, fail-safe control loop, and Roboteq USB serial output.
-- `scripts/setup-rpi4.sh`: installs dependencies, builds and installs the Pi process, creates the config and manual-start systemd service.
-- `docs/phase1-setup.md`: wiring, configuration, calibration, commissioning, and operation procedure.
-- `api/`, `web/`, `device/agent/`, `shared/`: future-phase scaffolding; they are not required to run Phase 1.
+- `device/control/`: SBUS decoding, hardware-free decoder tests, and the Pi receiver monitor.
+- `scripts/setup-rpi4.sh`: installs Pi dependencies and the monitor executable.
+- `docs/phase1-setup.md`: receiver wiring, install, and radio-link test procedure.
+- `api/`, `web/`, `device/agent/`, and the motor-control code: later-phase work, not used by Phase 1.
 
-## Safety
-
-The motor service is not enabled at boot and will not restart automatically after a failure. Starting it requires an explicit `systemctl start`; both sticks must then remain neutral for two seconds before control arms. The shipped motor command limit is 200/1000 and must be treated as a commissioning limit, not a safe vehicle speed.
-
-Receiver failsafe, invalid SBUS data, missing/stale frames, or a Roboteq serial write error stops drive commands locally. Use and independently verify the physical emergency stop and Roboteq command watchdog. Software stop behavior is not a substitute for either.
-
-Do not arm until you have confirmed the receiver signal is safe for Pi GPIO (3.3 V maximum), common ground, channel mapping, stick calibration, motor polarity, MDC2250 serial framing, separate-motor mode, open-loop behavior, and controller watchdog configuration. The Pi 4 BCM GPIO 17 input and previous project channel assignments are starting points only.
+Check receiver supply, common ground, and signal voltage before connecting to GPIO. Raspberry Pi GPIO is not 5 V tolerant; the SBUS signal must be verified at no more than 3.3 V.
 
 ## Build and test
 
@@ -29,4 +23,4 @@ cmake --build build --config Release
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-On Raspberry Pi OS, follow [the Phase 1 setup guide](docs/phase1-setup.md). The native hardware target links to pigpio and is built by the setup script.
+On Raspberry Pi OS, follow [the Phase 1 setup guide](docs/phase1-setup.md). The monitor reads the SBUS signal on BCM GPIO 17 by default; select another pin with `--gpio`.
