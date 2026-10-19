@@ -43,7 +43,10 @@ systemctl enable --now pigpiod
 
 build_dir="/opt/uv-roberta/build"
 mkdir -p "${build_dir}"
-cmake -S "${ROOT_DIR}" -B "${build_dir}" -DCMAKE_BUILD_TYPE=Release
+cmake -S "${ROOT_DIR}" -B "${build_dir}" \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DROBERTA_BUILD_PI_TARGETS=ON \
+  -DROBERTA_BUILD_DRIVE_RUNTIME=OFF
 cmake --build "${build_dir}" --target roberta_rc_monitor --parallel
 install -o root -g root -m 0755 \
   "${build_dir}/device/control/roberta_rc_monitor" \

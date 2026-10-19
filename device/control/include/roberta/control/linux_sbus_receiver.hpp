@@ -25,10 +25,16 @@ public:
     [[nodiscard]] std::optional<SbusFrame> latest_frame() const;
 
 private:
-    static void alert_callback(int gpio, int level, std::uint32_t tick, void* userdata);
+    static void alert_callback(
+        int pi,
+        unsigned gpio,
+        unsigned level,
+        std::uint32_t tick,
+        void* userdata);
     void on_edge(int level, std::uint32_t tick) noexcept;
     int gpio_pin_;
     unsigned pigpio_handle_;
+    int callback_id_{-1};
     RcMapping mapping_;
     std::chrono::milliseconds timeout_;
     mutable std::mutex mutex_;

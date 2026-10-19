@@ -48,7 +48,12 @@ Options parse_options(int argc, char** argv) {
     return options;
 }
 
-void alert_callback(int, int level, std::uint32_t tick, void* userdata) {
+void alert_callback(
+    int,
+    unsigned,
+    unsigned level,
+    std::uint32_t tick,
+    void* userdata) {
     auto& state = *static_cast<ReceiverState*>(userdata);
     const auto frame = state.decoder.feed(level, tick);
     if (frame) {
@@ -96,6 +101,7 @@ void print_status(ReceiverState& state, unsigned gpio) {
 
 int main(int argc, char** argv) {
     int pigpio_handle = -1;
+    int callback_id = -1;
     try {
         const auto options = parse_options(argc, argv);
         std::signal(SIGINT, on_signal);
@@ -111,11 +117,12 @@ int main(int argc, char** argv) {
                 static_cast<unsigned>(pigpio_handle),
                 options.gpio,
                 PI_INPUT) < 0 ||
-            set_alert_func_ex(
+            (callback_id = callback_ex(
                 static_cast<unsigned>(pigpio_handle),
                 options.gpio,
+                PI_EITHER_EDGE,
                 alert_callback,
-                &state) < 0) {
+                &state)) < 0) {
             throw std::runtime_error(
                 "Unable to configure the SBUS GPIO. Check BCM pin numbering and pigpiod.");
         }
@@ -127,16 +134,16 @@ int main(int argc, char** argv) {
         }
         std::cout << std::endl;
 
-        set_alert_func_ex(
-            static_cast<unsigned>(pigpio_handle),
-            options.gpio,
-            nullptr,
-            nullptr);
+        callback_cancel(static_cast<unsigned>(callback_id));
+        callback_id = -1;
         pigpio_stop(static_cast<unsigned>(pigpio_handle));
         return 0;
     } catch (const std::exception& error) {
         std::cerr << "roberta_rc_monitor: " << error.what() << std::endl;
         if (pigpio_handle >= 0) {
+            if (callback_id >= 0) {
+                callback_cancel(static_cast<unsigned>(callback_id));
+            }
             pigpio_stop(static_cast<unsigned>(pigpio_handle));
         }
         return 1;

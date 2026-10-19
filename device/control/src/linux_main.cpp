@@ -182,7 +182,8 @@ void run_armed(
     ControlLoop control_loop(std::move(controller), receiver, motor);
     const auto period = milliseconds(20);
     auto next_tick = steady_clock::now();
-    std::optional<steady_clock::time_point> neutral_since;
+    steady_clock::time_point neutral_since{};
+    bool neutral_timer_active = false;
     std::optional<bool> last_receiver_valid;
     bool armed = false;
     std::optional<ControlFault> last_fault;
@@ -201,14 +202,15 @@ void run_armed(
         last_receiver_valid = receiver_valid;
         if (!armed) {
             if (frame && neutral(*frame)) {
-                if (!neutral_since) {
+                if (!neutral_timer_active) {
                     neutral_since = now;
-                } else if (now - *neutral_since >= milliseconds(config.arm_neutral_ms)) {
+                    neutral_timer_active = true;
+                } else if (now - neutral_since >= milliseconds(config.arm_neutral_ms)) {
                     armed = true;
                     std::cout << "RC link valid and neutral. Drive control armed." << std::endl;
                 }
             } else {
-                neutral_since.reset();
+                neutral_timer_active = false;
             }
             motor.stop();
             if (!motor.healthy()) {

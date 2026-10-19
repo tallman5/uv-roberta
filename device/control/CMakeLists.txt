@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 project(RobertaControl LANGUAGES CXX)
 
 option(ROBERTA_BUILD_DRIVE_RUNTIME "Build the later-phase motor-driving runtime" OFF)
+option(ROBERTA_BUILD_PI_TARGETS "Build Raspberry Pi executables requiring pigpio" OFF)
 
 enable_testing()
 
@@ -24,7 +25,8 @@ add_executable(roberta_control_tests tests/controller_tests.cpp)
 target_link_libraries(roberta_control_tests PRIVATE roberta_control)
 add_test(NAME roberta_control_tests COMMAND roberta_control_tests)
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND
+   (ROBERTA_BUILD_PI_TARGETS OR ROBERTA_BUILD_DRIVE_RUNTIME))
   find_package(Threads REQUIRED)
   find_path(PIGPIO_INCLUDE_DIR pigpiod_if2.h REQUIRED)
   find_library(PIGPIOD_IF2_LIBRARY pigpiod_if2 REQUIRED)

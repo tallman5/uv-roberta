@@ -22,21 +22,32 @@ LinuxSbusReceiver::LinuxSbusReceiver(
         timeout_ > std::chrono::milliseconds(500)) {
         throw std::invalid_argument("Invalid RC frame timeout.");
     }
-    if (set_mode(pigpio_handle_, static_cast<unsigned>(gpio_pin_), PI_INPUT) < 0 ||
-        set_alert_func_ex(
+    if (set_mode(pigpio_handle_, static_cast<unsigned>(gpio_pin_), PI_INPUT) < 0) {
+        throw std::runtime_error("Unable to configure SBUS input GPIO. Check the BCM pin and GPIO permissions.");
+    }
+    callback_id_ = callback_ex(
             pigpio_handle_,
             static_cast<unsigned>(gpio_pin_),
+            PI_EITHER_EDGE,
             &LinuxSbusReceiver::alert_callback,
-            this) < 0) {
+            this);
+    if (callback_id_ < 0) {
         throw std::runtime_error("Unable to configure SBUS input GPIO. Check the BCM pin and GPIO permissions.");
     }
 }
 
 LinuxSbusReceiver::~LinuxSbusReceiver() {
-    set_alert_func_ex(pigpio_handle_, static_cast<unsigned>(gpio_pin_), nullptr, nullptr);
+    if (callback_id_ >= 0) {
+        callback_cancel(static_cast<unsigned>(callback_id_));
+    }
 }
 
-void LinuxSbusReceiver::alert_callback(int, int level, std::uint32_t tick, void* userdata) {
+void LinuxSbusReceiver::alert_callback(
+    int,
+    unsigned,
+    unsigned level,
+    std::uint32_t tick,
+    void* userdata) {
     static_cast<LinuxSbusReceiver*>(userdata)->on_edge(level, tick);
 }
 

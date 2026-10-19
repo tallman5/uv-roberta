@@ -21,7 +21,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: sudo apt-get update && sudo apt-get install -y libpigpiod-if-dev
       - run: cmake -S device/control -B build/control
       - run: cmake --build build/control --parallel
       - run: ctest --test-dir build/control --output-on-failure
