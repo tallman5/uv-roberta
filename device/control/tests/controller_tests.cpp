@@ -141,6 +141,18 @@ int main() {
             require_output(controller.update(now, dashboard_selected, dashboard), {0.25, 0.25}, "dashboard slow mode");
         });
 
+        run("motor command scale caps mixed output", [&] {
+            const RcFrame low{{1.0, 1.0}, ControlSource::Rc, false, now, 1.0 / 3.0};
+            const RcFrame medium{{1.0, 0.0}, ControlSource::Rc, false, now, 2.0 / 3.0};
+            const RcFrame high{{1.0, 0.0}, ControlSource::Rc, false, now, 1.0};
+            require_output(controller.update(now, low, std::nullopt), {1.0 / 3.0, 0.0}, "low switch position");
+            require_output(controller.update(now, medium, std::nullopt), {2.0 / 3.0, 2.0 / 3.0}, "medium switch position");
+            require_output(controller.update(now, high, std::nullopt), {1.0, 1.0}, "high switch position");
+
+            const RcFrame invalid_scale{{1.0, 0.0}, ControlSource::Rc, false, now, 1.1};
+            require_output(controller.update(now, invalid_scale, std::nullopt), {}, "invalid motor command scale");
+        });
+
         run("stale RC input stops regardless of selected source", [&] {
             const RcFrame stale{{1.0, 0.0}, ControlSource::Dashboard, false, now - 251ms};
             const DashboardCommand dashboard{{1.0, 0.0}, now};
@@ -302,6 +314,7 @@ int main() {
             SbusFrame frame;
             frame.channels[1] = 992;
             frame.channels[0] = 992;
+            frame.channels[9] = 992;
             auto drive = roberta::control::map_sbus_drive(frame, mapping);
             require_output({drive.throttle, drive.steering}, {}, "neutral sticks");
 
@@ -314,6 +327,29 @@ int main() {
             frame.failsafe = true;
             drive = roberta::control::map_sbus_drive(frame, mapping);
             require_output({drive.throttle, drive.steering}, {}, "failsafe frame");
+        });
+
+        run("channel 10 selects low medium and high motor limits", [&] {
+            using roberta::control::motor_command_scale;
+            require(std::abs(motor_command_scale(172) - 1.0 / 3.0) < 1e-9, "low switch limit incorrect");
+            require(std::abs(motor_command_scale(992) - 2.0 / 3.0) < 1e-9, "medium switch limit incorrect");
+            require(std::abs(motor_command_scale(1811) - 1.0) < 1e-9, "high switch limit incorrect");
+            require(motor_command_scale(171) == 0.0, "out-of-range switch value was accepted");
+
+            const RcMapping mapping{
+                1,
+                0,
+                {172, 992, 1811, false},
+                {172, 992, 1811, false},
+                0.04
+            };
+            SbusFrame frame;
+            frame.channels[1] = 992;
+            frame.channels[0] = 992;
+            frame.channels[9] = 0;
+            require(
+                !roberta::control::valid_sbus_drive_channels(frame, mapping),
+                "invalid channel 10 value was accepted");
         });
 
         run("RC configuration is parsed and validated before arming", [&] {

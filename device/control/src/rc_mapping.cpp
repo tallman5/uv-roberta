@@ -51,7 +51,9 @@ bool valid_sbus_drive_channels(const SbusFrame& frame, const RcMapping& mapping)
            frame.channels[mapping.throttle_channel] >= 172 &&
            frame.channels[mapping.throttle_channel] <= 1811 &&
            frame.channels[mapping.steering_channel] >= 172 &&
-           frame.channels[mapping.steering_channel] <= 1811;
+           frame.channels[mapping.steering_channel] <= 1811 &&
+           frame.channels[9] >= 172 &&
+           frame.channels[9] <= 1811;
 }
 
 DriveInput map_sbus_drive(const SbusFrame& frame, const RcMapping& mapping) noexcept {
@@ -63,6 +65,25 @@ DriveInput map_sbus_drive(const SbusFrame& frame, const RcMapping& mapping) noex
         normalize_axis(frame.channels[mapping.throttle_channel], mapping.throttle, mapping.deadband),
         normalize_axis(frame.channels[mapping.steering_channel], mapping.steering, mapping.deadband)
     };
+}
+
+double motor_command_scale(std::uint16_t channel_value) noexcept {
+    constexpr std::uint16_t kSbusMinimum = 172;
+    constexpr std::uint16_t kLowMediumBoundary =
+        kSbusMinimum + (1811 - kSbusMinimum) / 3;
+    constexpr std::uint16_t kMediumHighBoundary =
+        kSbusMinimum + 2 * (1811 - kSbusMinimum) / 3;
+
+    if (channel_value < kSbusMinimum || channel_value > 1811) {
+        return 0.0;
+    }
+    if (channel_value < kLowMediumBoundary) {
+        return 1.0 / 3.0;
+    }
+    if (channel_value < kMediumHighBoundary) {
+        return 2.0 / 3.0;
+    }
+    return 1.0;
 }
 
 }  // namespace roberta::control

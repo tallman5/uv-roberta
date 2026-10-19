@@ -38,7 +38,7 @@ sudoedit /etc/uv-roberta/rc-drive.conf
 
 Set `receiver_gpio` to the BCM GPIO connected to SBUS. Set `throttle_channel` and `steering_channel` to the observed channel numbers (1–16); the example values are only placeholders. The Roboteq device defaults to `/dev/serial/by-id/usb-Roboteq_Motor_Controller_MDC2XXX-if00`; change `roboteq_device` in the config if this controller appears at another path. An empty `roboteq_device` setting also uses this default. Set `roboteq_baud` to the controller's configured baud rate. The configured left/right Roboteq channels must be distinct channels 1 and 2.
 
-Keep `max_motor_command` at the conservative example value of 200 (20% of the controller's command range) or lower for commissioning. It is a software command cap, not a guarantee of a particular wheel speed or torque. Do not raise it until low-limit operation, motor directions, stop behavior, and the physical emergency stop have been verified.
+Keep `max_motor_command` at the conservative example value of 200 (20% of the controller's command range) or lower for commissioning. The transmitter's channel 10 three-position switch sets the active cap to one third when low, two thirds when medium, and the configured `max_motor_command` when high. For example, with `max_motor_command=200`, those caps are approximately 66, 133, and 200. The low/medium/high positions are classified from the SBUS range (172–1811); check channel 10 in monitor mode and verify all three positions before arming. An out-of-range channel 10 value is treated as invalid RC input and stops the motors. This is a software command cap, not a guarantee of a particular wheel speed or torque. Do not raise the configured cap until low-limit operation, motor directions, stop behavior, and the physical emergency stop have been verified.
 
 Calibrate the sticks using the observed channels. The calibration process does not open or command the motor controller:
 
@@ -70,9 +70,9 @@ With the frame still securely raised, people clear, the physical stop ready, and
   --arm
 ```
 
-The program opens the Roboteq, sends zero commands, and waits for valid SBUS frames with both sticks neutral continuously for `arm_neutral_ms` (2 seconds by default). Once armed, throttle controls forward/reverse and steering mixes the left and right wheel commands. `deadband` suppresses small stick movement around center; per-axis inversion and per-motor inversion are independently configurable.
+The program opens the Roboteq, sends zero commands, and waits for valid SBUS frames with both sticks neutral continuously for `arm_neutral_ms` (2 seconds by default). Once armed, throttle controls forward/reverse and steering mixes the left and right wheel commands. Channel 10 selects the active motor-command cap: low = 33%, medium = 66%, high = 100% of the configured `max_motor_command`. `deadband` suppresses small stick movement around center; per-axis inversion and per-motor inversion are independently configurable.
 
-Move one stick at a time and confirm each wheel's direction at the low command limit. Then test steering, neutral stop, and transmitter-off/failsafe behavior. If the SBUS link is lost or marked failsafe, both channels are commanded to zero and the drive disarms. After restoring the link, return both sticks to neutral and wait for the full arm hold again before any motion is accepted.
+Move one stick at a time and confirm each wheel's direction at the low command limit. Check each channel 10 switch position first at neutral, then test throttle, steering, neutral stop, and transmitter-off/failsafe behavior. If the SBUS link is lost or marked failsafe, or channel 10 is invalid, both channels are commanded to zero and the drive disarms. After restoring valid input, return both sticks to neutral and wait for the full arm hold again before any motion is accepted.
 
 Press Ctrl-C to exit; the program sends zero commands to both channels on normal shutdown. If it reports a serial or controller error, use the physical emergency stop and investigate before restarting. The runtime has no dashboard/network control path.
 

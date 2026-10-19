@@ -43,6 +43,10 @@ MotorOutput Controller::update(
     if (!rc || !fresh(now, rc->received_at, config_.rc_timeout) || !valid_drive(rc->drive)) {
         return {};
     }
+    if (!std::isfinite(rc->motor_command_scale) ||
+        rc->motor_command_scale < 0.0 || rc->motor_command_scale > 1.0) {
+        return {};
+    }
 
     DriveInput requested{};
     switch (rc->selected_source) {
@@ -61,8 +65,10 @@ MotorOutput Controller::update(
         return {};
     }
 
-    const double scale = rc->slow_mode ? config_.slow_mode_scale : 1.0;
-    return mix(requested, scale);
+    auto output = mix(requested, rc->slow_mode ? config_.slow_mode_scale : 1.0);
+    output.left *= rc->motor_command_scale;
+    output.right *= rc->motor_command_scale;
+    return output;
 }
 
 }  // namespace roberta::control

@@ -22,6 +22,7 @@ struct RcFrame {
     ControlSource selected_source{ControlSource::Rc};
     bool slow_mode{};
     MonotonicTime received_at;
+    double motor_command_scale{1.0};
 };
 
 struct DashboardCommand {

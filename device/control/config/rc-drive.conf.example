@@ -1,5 +1,6 @@
 # The setup script installs this example at /etc/uv-roberta/rc-drive.conf if absent.
 # Stick channels and SBUS calibration values must be checked with --monitor/--calibrate.
+# Transmitter channel 10 selects the low/medium/high motor-command cap.
 receiver_gpio=17
 throttle_channel=2
 throttle_min=172

@@ -80,7 +80,8 @@ std::optional<RcFrame> LinuxSbusReceiver::read(MonotonicTime now) noexcept {
         map_sbus_drive(*latest_frame_, mapping_),
         ControlSource::Rc,
         false,
-        received_at_
+        received_at_,
+        motor_command_scale(latest_frame_->channels[9])
     };
 }
 

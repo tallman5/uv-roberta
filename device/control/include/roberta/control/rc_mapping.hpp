@@ -30,5 +30,6 @@ struct RcMapping {
 [[nodiscard]] bool valid_mapping(const RcMapping& mapping) noexcept;
 [[nodiscard]] bool valid_sbus_drive_channels(const SbusFrame& frame, const RcMapping& mapping) noexcept;
 [[nodiscard]] DriveInput map_sbus_drive(const SbusFrame& frame, const RcMapping& mapping) noexcept;
+[[nodiscard]] double motor_command_scale(std::uint16_t channel_value) noexcept;
 
 }  // namespace roberta::control
