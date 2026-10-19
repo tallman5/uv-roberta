@@ -47,7 +47,7 @@ If your SBUS signal uses another BCM GPIO:
 roberta_rc_monitor --gpio 18
 ```
 
-The program connects to the local `pigpiod` daemon and refreshes the console display. It does not need `sudo` when pigpiod is running with its standard local socket access. If it cannot connect, check:
+The program connects to the local `pigpiod` daemon and redraws a fixed screen with one channel per line, updating values in place. It does not need `sudo` when pigpiod is running with its standard local socket access. If it cannot connect, check:
 
 ```bash
 sudo systemctl status pigpiod

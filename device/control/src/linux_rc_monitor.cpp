@@ -5,6 +5,7 @@
 #include <chrono>
 #include <csignal>
 #include <cstdint>
+#include <iomanip>
 #include <iostream>
 #include <mutex>
 #include <optional>
@@ -25,6 +26,17 @@ struct ReceiverState {
     roberta::control::SbusEdgeDecoder decoder;
     std::optional<roberta::control::SbusFrame> latest_frame;
     std::chrono::steady_clock::time_point received_at{};
+};
+
+class TerminalScreen final {
+public:
+    TerminalScreen() {
+        std::cout << "\033[2J\033[?25l" << std::flush;
+    }
+
+    ~TerminalScreen() {
+        std::cout << "\033[?25h" << std::endl;
+    }
 };
 
 struct Options {
@@ -72,7 +84,9 @@ void print_status(ReceiverState& state, unsigned gpio) {
         received_at = state.received_at;
     }
 
-    std::cout << "\rBCM GPIO " << gpio << " | ";
+    std::cout << "\033[H"
+              << "RC receiver monitor (Ctrl-C to exit)\n"
+              << "Input: BCM GPIO " << gpio << " | Status: ";
     if (!frame) {
         std::cout << "Waiting for a valid SBUS frame...";
     } else {
@@ -88,13 +102,23 @@ void print_status(ReceiverState& state, unsigned gpio) {
             std::cout << "OK";
         }
         std::cout << " age=" << age << "ms";
-        for (std::size_t channel = 0; channel < frame->channels.size(); ++channel) {
-            std::cout << " CH" << channel + 1 << '=' << frame->channels[channel];
-        }
-        std::cout << " CH17=" << (frame->channel_17 ? "ON" : "OFF")
-                  << " CH18=" << (frame->channel_18 ? "ON" : "OFF");
     }
-    std::cout << " (Ctrl-C to exit)\033[K" << std::flush;
+    std::cout << "\n\n";
+
+    for (std::size_t channel = 0; channel < 16; ++channel) {
+        std::cout << "CH" << std::setw(2) << channel + 1 << " : ";
+        if (frame) {
+            std::cout << frame->channels[channel];
+        } else {
+            std::cout << "--";
+        }
+        std::cout << '\n';
+    }
+    std::cout << "CH17 : "
+              << (frame ? (frame->channel_17 ? "ON" : "OFF") : "--") << '\n'
+              << "CH18 : "
+              << (frame ? (frame->channel_18 ? "ON" : "OFF") : "--") << '\n'
+              << "\033[J" << std::flush;
 }
 
 }  // namespace
@@ -128,6 +152,7 @@ int main(int argc, char** argv) {
         }
 
         std::cout << "RC receiver monitor only; this program cannot command motors." << std::endl;
+        TerminalScreen screen;
         while (!stopping) {
             print_status(state, options.gpio);
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
