@@ -25,7 +25,7 @@ cd uv-roberta-v2
 sudo bash scripts/setup-rpi4.sh
 ```
 
-The installer checks for Raspberry Pi OS and Pi 4 hardware, installs the build and pigpio dependencies, starts `pigpiod`, builds the monitor, and installs it as `/usr/local/bin/roberta_rc_monitor`. It does not configure or start a motor-control service and does not create a drive configuration.
+The installer checks for Raspberry Pi OS and Pi 4 hardware, updates installed OS packages, installs Git and any missing build/pigpio dependencies, ensures `pigpiod` is enabled and running, builds the monitor, and installs it as `/usr/local/bin/roberta_rc_monitor`. It is safe to rerun: installed dependencies and a running/enabled daemon are detected, while the monitor is rebuilt and updated from the checked-out source each time. It does not configure or start a motor-control service and does not create a drive configuration. If a system update requires rebooting, the installer reports that at the end.
 
 If you previously installed the drive service, stop and disable it before this RC-only test:
 

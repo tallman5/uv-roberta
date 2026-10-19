@@ -32,14 +32,38 @@ if [[ "${model}" != *"Raspberry Pi 4"* ]]; then
   exit 1
 fi
 
+echo "Updating Raspberry Pi OS packages..."
 apt-get update
-apt-get install -y --no-install-recommends \
-  build-essential \
-  cmake \
-  libpigpiod-if-dev \
-  pigpio
+apt-get upgrade -y
 
-systemctl enable --now pigpiod
+required_packages=(
+  build-essential
+  cmake
+  git
+  libpigpiod-if-dev
+  pigpio
+)
+missing_packages=()
+for package in "${required_packages[@]}"; do
+  if dpkg-query -W -f='${db:Status-Status}' "${package}" 2>/dev/null | grep -qx installed; then
+    echo "${package} is already installed."
+  else
+    missing_packages+=("${package}")
+  fi
+done
+
+if ((${#missing_packages[@]} > 0)); then
+  apt-get install -y --no-install-recommends "${missing_packages[@]}"
+else
+  echo "All required packages are already installed."
+fi
+
+if systemctl is-active --quiet pigpiod.service &&
+   systemctl is-enabled --quiet pigpiod.service; then
+  echo "pigpiod is already enabled and running."
+else
+  systemctl enable --now pigpiod.service
+fi
 
 build_dir="/opt/uv-roberta/build"
 mkdir -p "${build_dir}"
@@ -61,3 +85,7 @@ echo "  2. Connect SBUS signal to BCM GPIO 17 and share ground with the Pi."
 echo "  3. Run: /usr/local/bin/roberta_rc_monitor"
 echo "     Use --gpio BCM_PIN if your signal is connected to a different pin."
 echo "  4. Move sticks and switches; observe SBUS channels 1-18 and link status."
+if [[ -e /var/run/reboot-required ]]; then
+  echo
+  echo "A system update requires a reboot. Reboot before running the monitor."
+fi
