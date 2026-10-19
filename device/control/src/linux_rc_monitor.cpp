@@ -103,21 +103,22 @@ void print_status(ReceiverState& state, unsigned gpio) {
         }
         std::cout << " age=" << age << "ms";
     }
-    std::cout << "\n\n";
+    std::cout << "\033[K\n\n";
 
     for (std::size_t channel = 0; channel < 16; ++channel) {
-        std::cout << "CH" << std::setw(2) << channel + 1 << " : ";
+        std::cout << "CH" << std::setw(2) << channel + 1 << " : "
+                  << std::setw(4) << std::right;
         if (frame) {
             std::cout << frame->channels[channel];
         } else {
             std::cout << "--";
         }
-        std::cout << '\n';
+        std::cout << "\033[K\n";
     }
-    std::cout << "CH17 : "
-              << (frame ? (frame->channel_17 ? "ON" : "OFF") : "--") << '\n'
-              << "CH18 : "
-              << (frame ? (frame->channel_18 ? "ON" : "OFF") : "--") << '\n'
+    std::cout << "CH17 : " << std::setw(4) << std::right
+              << (frame ? (frame->channel_17 ? "ON" : "OFF") : "--") << "\033[K\n"
+              << "CH18 : " << std::setw(4) << std::right
+              << (frame ? (frame->channel_18 ? "ON" : "OFF") : "--") << "\033[K\n"
               << "\033[J" << std::flush;
 }
 
