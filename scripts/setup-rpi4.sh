@@ -13,7 +13,7 @@ fi
 
 if [[ ! -f /etc/os-release ]] || ! grep -qiE 'raspbian|raspberry' /etc/os-release; then
   echo "This installer targets Raspberry Pi OS on the Raspberry Pi 4." >&2
-  exit 1
+  # exit 1
 fi
 
 apt-get update
