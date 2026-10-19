@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uv-roberta.invalid/contracts/v1/drive-command.schema.json",
+  "title": "DriveCommand",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocolVersion", "commandId", "throttle", "steering", "expiresAt"],
+  "properties": {
+    "protocolVersion": { "const": 1 },
+    "commandId": { "type": "string", "format": "uuid" },
+    "throttle": { "type": "number", "minimum": -1, "maximum": 1 },
+    "steering": { "type": "number", "minimum": -1, "maximum": 1 },
+    "expiresAt": { "type": "string", "format": "date-time" }
+  }
+}

@@ -12,6 +12,10 @@ UV Roberta v2 is a Raspberry Pi 4–based, remotely observable and controllable 
 - RC Transmitter, FrSky Taranis X9 Lite
 - RC receiver, FrSky XM Plus Mini Receiver up to 16CH 1.6g Full Range, connected to the RPi4 via pins
 
+### Current implementation phase
+
+Phase 1 is a local RC-only MVP: Taranis X9 Lite → XM+ SBUS → Raspberry Pi 4 → Roboteq MDC2250 → drive motors. Do not add GPS, cameras, API/hub, dashboard, remote control, or transmitter-switch features to the Phase 1 runtime. Keep the other architecture and contracts below as later-phase context; they are not required to build or operate the Phase 1 robot.
+
 The software direction is to use C++ for low-level, timing-sensitive hardware control wherever it is practical, and Qwik with Bootstrap for the web dashboard.
 
 ## Design priorities

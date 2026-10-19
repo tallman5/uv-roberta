@@ -1,0 +1,42 @@
+@import "bootstrap/dist/css/bootstrap.min.css";
+
+:root {
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  min-width: 320px;
+  background: #f5f7fa;
+}
+
+.virtual-stick {
+  position: relative;
+  display: grid;
+  width: min(72vw, 280px);
+  aspect-ratio: 1;
+  place-items: center;
+  border: 2px solid #adb5bd;
+  border-radius: 50%;
+  background:
+    linear-gradient(transparent calc(50% - 1px), #adb5bd calc(50% - 1px), #adb5bd calc(50% + 1px), transparent calc(50% + 1px)),
+    linear-gradient(90deg, transparent calc(50% - 1px), #adb5bd calc(50% - 1px), #adb5bd calc(50% + 1px), transparent calc(50% + 1px)),
+    #e9ecef;
+  touch-action: none;
+  user-select: none;
+}
+
+.virtual-stick--disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.virtual-stick__knob {
+  position: absolute;
+  width: 92px;
+  height: 92px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #0d6efd;
+  box-shadow: 0 0.25rem 0.75rem #0003;
+  pointer-events: none;
+}

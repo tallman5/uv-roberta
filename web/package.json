@@ -1,0 +1,34 @@
+{
+  "name": "uv-roberta-dashboard",
+  "description": "UV Roberta v2 operator dashboard",
+  "engines": {
+    "node": "^20.19.0 || ^22.12.0 || >=24.0.0"
+  },
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@microsoft/signalr": "^9.0.19",
+    "bootstrap": "^5.3.8"
+  },
+  "scripts": {
+    "build": "npm run build.types && vite build",
+    "build.types": "tsc --incremental --noEmit",
+    "dev": "vite",
+    "lint": "eslint \"src/**/*.ts*\"",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@builder.io/qwik": "^1.20.2",
+    "@eslint/js": "^9",
+    "@types/node": "20.19.0",
+    "eslint": "^10.13.0",
+    "eslint-plugin-qwik": "^1.20.2",
+    "globals": "16.4.0",
+    "prettier": "3.6.2",
+    "typescript": "5.4.5",
+    "typescript-eslint": "^8.71.2",
+    "vite": "^7.3.7",
+    "vitest": "^4.1.11"
+  }
+}

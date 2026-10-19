@@ -1,0 +1,21 @@
+[Unit]
+Description=UV Roberta Phase 1 RC drive control
+After=pigpiod.service
+Requires=pigpiod.service
+
+[Service]
+Type=simple
+User=roberta
+Group=roberta
+SupplementaryGroups=dialout
+ExecStart=/usr/local/bin/roberta_rc_drive --config /etc/uv-roberta/rc-drive.conf --arm
+Restart=no
+KillSignal=SIGINT
+TimeoutStopSec=2
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

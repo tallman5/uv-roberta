@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uv-roberta.invalid/contracts/v1/command-acknowledgement.schema.json",
+  "title": "CommandAcknowledgement",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocolVersion", "commandId", "accepted", "detail"],
+  "properties": {
+    "protocolVersion": { "const": 1 },
+    "commandId": { "type": "string", "format": "uuid" },
+    "accepted": { "type": "boolean" },
+    "detail": { "type": "string", "maxLength": 256 }
+  }
+}

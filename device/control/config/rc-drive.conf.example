@@ -1,0 +1,23 @@
+# The setup script writes /etc/uv-roberta/rc-drive.conf.
+# Stick channels and SBUS calibration values must be checked with --monitor/--calibrate.
+receiver_gpio=17
+throttle_channel=2
+throttle_min=172
+throttle_center=992
+throttle_max=1811
+throttle_inverted=false
+steering_channel=1
+steering_min=172
+steering_center=992
+steering_max=1811
+steering_inverted=false
+deadband=0.04
+receiver_timeout_ms=100
+roboteq_device=
+roboteq_baud=9600
+max_motor_command=200
+left_motor_channel=2
+right_motor_channel=1
+left_motor_inverted=false
+right_motor_inverted=false
+arm_neutral_ms=2000

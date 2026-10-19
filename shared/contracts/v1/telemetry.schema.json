@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uv-roberta.invalid/contracts/v1/telemetry.schema.json",
+  "title": "RobertaTelemetry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocolVersion", "deviceId", "observedAt", "controlSource", "slowMode", "motorEnabled", "cameraStreams"],
+  "properties": {
+    "protocolVersion": { "const": 1 },
+    "deviceId": { "type": "string", "minLength": 1 },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "controlSource": { "enum": ["rc", "dashboard", "unknown"] },
+    "slowMode": { "type": "boolean" },
+    "motorEnabled": { "type": "boolean" },
+    "fault": { "type": ["string", "null"], "maxLength": 256 },
+    "gps": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["latitude", "longitude", "observedAt"],
+      "properties": {
+        "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+        "longitude": { "type": "number", "minimum": -180, "maximum": 180 },
+        "observedAt": { "type": "string", "format": "date-time" },
+        "accuracyMeters": { "type": ["number", "null"], "minimum": 0 }
+      }
+    },
+    "cameraStreams": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "url"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "url": { "type": "string", "format": "uri", "pattern": "^https?://" }
+        }
+      }
+    }
+  }
+}
