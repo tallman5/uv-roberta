@@ -11,7 +11,7 @@ Use the reviewed Phase 2 configuration and start telemetry mode:
   --config /etc/uv-roberta/rc-drive.conf
 ```
 
-The monitor displays all 16 raw SBUS channels, digital channels 17/18, receiver freshness/failsafe state, and Roboteq readings for the configured left and right motor channels. The Roboteq section includes shared battery voltage, controller-reported speed, motor and battery current, applied power, motor/controller temperatures, and an estimated overall battery percentage. You can run it without a transmitter or `pigpiod`; the RC side then shows as unavailable while serial telemetry continues. Press Ctrl-C to exit.
+The monitor displays all 16 raw SBUS channels, digital channels 17/18, receiver freshness/failsafe state, and Roboteq readings for the configured left and right motor channels. The telemetry table includes shared battery voltage, controller-reported speed, motor and battery current, applied power, motor/controller temperatures, Raspberry Pi CPU temperature, and an estimated overall battery percentage. Pi temperature is read from `/sys/class/thermal/thermal_zone0/temp`; it displays `--` if that sysfs reading is unavailable. You can run the monitor without a transmitter or `pigpiod`; the RC side then shows as unavailable while serial telemetry continues. Press Ctrl-C to exit.
 
 The monitor uses `receiver_gpio`, `roboteq_device`, `roboteq_baud`, `left_motor_channel`, and `right_motor_channel` from the configuration. An explicit `--gpio BCM_PIN` overrides the configured receiver GPIO.
 

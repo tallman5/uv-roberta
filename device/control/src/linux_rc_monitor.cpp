@@ -5,8 +5,10 @@
 #include <pigpiod_if2.h>
 
 #include <chrono>
+#include <charconv>
 #include <csignal>
 #include <cstdint>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <mutex>
@@ -146,6 +148,22 @@ std::string format_metric(
     return output.str();
 }
 
+std::optional<double> read_pi_temperature() {
+    std::ifstream input("/sys/class/thermal/thermal_zone0/temp");
+    long milli_degrees{};
+    std::string value;
+    if (!input || !(input >> value)) {
+        return std::nullopt;
+    }
+
+    const auto [end, error] = std::from_chars(
+        value.data(), value.data() + value.size(), milli_degrees);
+    if (error != std::errc{} || end != value.data() + value.size()) {
+        return std::nullopt;
+    }
+    return static_cast<double>(milli_degrees) / 1000.0;
+}
+
 std::string format_channel(
     const std::optional<roberta::control::SbusFrame>& frame,
     std::size_t channel) {
@@ -213,6 +231,7 @@ void print_telemetry_status(
     const auto right = static_cast<std::size_t>(config.right_motor_channel - 1);
     const auto battery_percent = estimate_battery_percent(
         telemetry.battery_volts, config.battery_nominal_volts);
+    const auto pi_temperature = read_pi_temperature();
     for (std::size_t row = 0; row < 6; ++row) {
         std::cout << std::left << std::setw(14) << format_channel(frame, row)
                   << std::setw(14) << format_channel(frame, row + 6)
@@ -245,6 +264,7 @@ void print_telemetry_status(
         "Controller temp",
         format_metric(telemetry.controller_temperature, " C"),
         "");
+    print_metric("RPi CPU temp", format_metric(pi_temperature, " C"), "");
     print_metric(
         "Battery estimate",
         battery_percent ? std::to_string(*battery_percent) + "%" : "--",
