@@ -23,7 +23,9 @@ Speed is the controller-reported RPM and depends on the controller's encoder fee
 
 `battery_nominal_volts` defaults to 24 V, matching the existing 24 V wheelchair battery setup. The displayed percentage is a voltage-based estimate: it maps nominal voltage divided by 1.125 to 0% and nominal voltage multiplied by 1.125 to 100%, clamping values outside that range. It is not a fuel gauge and will vary with battery chemistry, temperature, and load. Set the nominal voltage to match the installed battery system; the estimate should not be used as a safety cutoff.
 
-The MDC2250 exposes a shared battery-bus voltage, not an independent battery supply for each motor. The screen shows this same shared voltage alongside both left and right motor readings. It uses the second `?V` response value for the bus-voltage estimate, matching the previous Roboteq integration; verify the response against the installed MDC2250 firmware during commissioning.
+The MDC2250 exposes a shared battery-bus voltage, not an independent battery supply for each motor. The screen shows this same shared voltage alongside both left and right motor readings. It uses the second `?V` response value for the bus-voltage estimate, matching the previous Roboteq integration, and tolerates additional fields in the broadcast response.
+
+The combined display uses three compact SBUS channel columns followed by a left/right telemetry table to avoid wrapping on a standard 80-column terminal.
 
 ## Preserve RC-only monitoring
 

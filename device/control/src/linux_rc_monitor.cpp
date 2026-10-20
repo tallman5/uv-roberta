@@ -151,7 +151,7 @@ std::string format_channel(
     std::size_t channel) {
     std::ostringstream output;
     output << "CH" << std::setw(2) << std::setfill('0') << channel + 1
-           << " : " << std::setfill(' ') << std::setw(4);
+           << ':' << std::setfill(' ');
     if (!frame) {
         output << "--";
     } else if (channel < frame->channels.size()) {
@@ -166,7 +166,6 @@ std::string format_channel(
 
 void print_telemetry_status(
     ReceiverState& state,
-    unsigned gpio,
     bool receiver_available,
     const roberta::control::RoboteqTelemetrySnapshot& telemetry,
     const roberta::control::RcDriveConfig& config) {
@@ -180,79 +179,81 @@ void print_telemetry_status(
     }
 
     std::cout << "\033[H"
-              << "RC + Roboteq telemetry monitor (no motor commands, Ctrl-C to exit)\n"
-              << "Input: BCM GPIO " << gpio << " | RC status: ";
+              << "RC + Roboteq telemetry (no motor commands; Ctrl-C to exit)\n"
+              << "Serial " << config.roboteq_baud << " baud | RC: ";
     if (!receiver_available) {
-        std::cout << "unavailable (Roboteq polling continues)";
+        std::cout << "unavailable";
     } else if (!frame) {
-        std::cout << "WAITING FOR SBUS";
+        std::cout << "waiting for SBUS";
     } else {
         const auto age = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - received_at).count();
         if (age > 100) {
-            std::cout << "STALE (" << age << " ms)";
+            std::cout << "stale (" << age << " ms)";
         } else if (frame->failsafe) {
-            std::cout << "FAILSAFE";
+            std::cout << "failsafe";
         } else if (frame->frame_lost) {
-            std::cout << "FRAME LOST";
+            std::cout << "frame lost";
         } else {
             std::cout << "OK";
         }
-        std::cout << " age=" << age << "ms";
     }
-    std::cout << "\033[K\n"
-              << "Roboteq serial: " << config.roboteq_device
-              << " @ " << config.roboteq_baud << " baud\033[K\n\n"
-              << "SBUS channels (raw)                 | Roboteq telemetry\n"
-              << "------------------------------------+--------------------------------------\n";
+    std::cout << " | Roboteq: ";
+    if (!telemetry.last_response_at) {
+        std::cout << "NO DATA";
+    } else {
+        const auto age = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - *telemetry.last_response_at).count();
+        std::cout << (age > 500 ? "stale " : "data ")
+                  << age << " ms ago";
+    }
+    std::cout << "\033[K\n\nRC channels (raw)\n";
 
     const auto left = static_cast<std::size_t>(config.left_motor_channel - 1);
     const auto right = static_cast<std::size_t>(config.right_motor_channel - 1);
     const auto battery_percent = estimate_battery_percent(
         telemetry.battery_volts, config.battery_nominal_volts);
-    for (std::size_t row = 0; row < 9; ++row) {
-        std::cout << std::left << std::setw(18) << format_channel(frame, row)
-                  << " | " << format_channel(frame, row + 9) << "\033[K\n";
+    for (std::size_t row = 0; row < 6; ++row) {
+        std::cout << std::left << std::setw(14) << format_channel(frame, row)
+                  << std::setw(14) << format_channel(frame, row + 6)
+                  << format_channel(frame, row + 12) << "\033[K\n";
     }
 
-    const auto print_side = [&](const std::string& label, std::size_t channel) {
-        std::cout << " | " << label << " (CH" << channel + 1 << ")"
-                  << "  Batt V(shared) " << format_metric(telemetry.battery_volts, " V")
-                  << "  Speed " << format_metric(telemetry.speed_rpm[channel], " RPM", 0)
-                  << "\033[K\n"
-                  << " | Motor " << format_metric(telemetry.motor_amps[channel], " A")
-                  << "  Battery " << format_metric(telemetry.battery_amps[channel], " A")
-                  << "  Power " << format_metric(telemetry.power_percent[channel], " %")
-                  << "  Temp " << format_metric(telemetry.motor_temperature[channel], " C")
-                  << "\033[K\n";
+    const auto print_metric = [&](
+                                  const std::string& label,
+                                  const std::string& left_value,
+                                  const std::string& right_value) {
+        std::cout << std::left << std::setw(18) << label
+                  << std::setw(13) << left_value << right_value << "\033[K\n";
     };
-    print_side("Left", left);
-    print_side("Right", right);
-    std::cout << " | Controller temp: "
-              << format_metric(telemetry.controller_temperature, " C")
-              << "  Roboteq: ";
-    if (!telemetry.last_response_at) {
-        std::cout << "NO DATA (check serial port, baud, and controller telemetry output)";
-    } else {
-        const auto age = std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::steady_clock::now() - *telemetry.last_response_at).count();
-        std::cout << (age > 500 ? "STALE DATA " : "broadcast data ")
-                  << age << " ms ago";
-    }
-    std::cout << "\033[K\n"
-              << " | Battery estimate: ";
-    if (battery_percent) {
-        std::cout << *battery_percent << '%';
-    } else {
-        std::cout << "--";
-    }
-    std::cout << " (nominal " << config.battery_nominal_volts << " V; voltage estimate)"
-              << "\033[K\n\033[J" << std::flush;
+    std::cout << "\nRoboteq telemetry       Left         Right\033[K\n";
+    print_metric(
+        "Battery bus",
+        format_metric(telemetry.battery_volts, " V"),
+        "shared");
+    print_metric("Speed", format_metric(telemetry.speed_rpm[left], " RPM", 0),
+        format_metric(telemetry.speed_rpm[right], " RPM", 0));
+    print_metric("Motor current", format_metric(telemetry.motor_amps[left], " A"),
+        format_metric(telemetry.motor_amps[right], " A"));
+    print_metric("Battery current", format_metric(telemetry.battery_amps[left], " A"),
+        format_metric(telemetry.battery_amps[right], " A"));
+    print_metric("Power", format_metric(telemetry.power_percent[left], " %"),
+        format_metric(telemetry.power_percent[right], " %"));
+    print_metric("Motor temp", format_metric(telemetry.motor_temperature[left], " C"),
+        format_metric(telemetry.motor_temperature[right], " C"));
+    print_metric(
+        "Controller temp",
+        format_metric(telemetry.controller_temperature, " C"),
+        "");
+    print_metric(
+        "Battery estimate",
+        battery_percent ? std::to_string(*battery_percent) + "%" : "--",
+        "voltage-based");
+    std::cout << "\033[J" << std::flush;
 }
 
 void run_telemetry_monitor(
     ReceiverState& state,
-    unsigned gpio,
     bool receiver_available,
     roberta::control::LinuxRoboteqTelemetry& roboteq,
     const roberta::control::RcDriveConfig& config) {
@@ -260,7 +261,7 @@ void run_telemetry_monitor(
     auto next_refresh = steady_clock::now();
     while (!stopping) {
         const auto telemetry = roboteq.refresh();
-        print_telemetry_status(state, gpio, receiver_available, telemetry, config);
+        print_telemetry_status(state, receiver_available, telemetry, config);
         next_refresh += seconds(1);
         std::this_thread::sleep_until(next_refresh);
         if (steady_clock::now() > next_refresh + seconds(1)) {
@@ -328,7 +329,7 @@ int main(int argc, char** argv) {
         TerminalScreen screen;
         if (options.telemetry) {
             telemetry.emplace(config->roboteq_device, config->roboteq_baud);
-            run_telemetry_monitor(state, gpio, receiver_available, *telemetry, *config);
+            run_telemetry_monitor(state, receiver_available, *telemetry, *config);
         } else {
             std::cout << "RC receiver monitor only; this program cannot command motors." << std::endl;
             while (!stopping) {

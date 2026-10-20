@@ -13,7 +13,6 @@ namespace {
 std::optional<std::vector<double>> parse_values(
     std::string_view response,
     std::string_view prefix,
-    std::size_t count,
     double scale) {
     if (!std::isfinite(scale) || response.size() <= prefix.size() ||
         response.substr(0, prefix.size()) != prefix) {
@@ -38,9 +37,6 @@ std::optional<std::vector<double>> parse_values(
         }
         result.push_back(parsed * scale);
     }
-    if (result.size() != count) {
-        return std::nullopt;
-    }
     return result;
 }
 
@@ -50,19 +46,26 @@ std::optional<std::array<double, 2>> parse_roboteq_pair(
     std::string_view response,
     std::string_view prefix,
     double scale) {
-    const auto values = parse_values(response, prefix, 2, scale);
-    if (!values) {
+    const auto values = parse_roboteq_values(response, prefix, scale);
+    if (!values || values->size() != 2) {
         return std::nullopt;
     }
     return std::array<double, 2>{(*values)[0], (*values)[1]};
+}
+
+std::optional<std::vector<double>> parse_roboteq_values(
+    std::string_view response,
+    std::string_view prefix,
+    double scale) {
+    return parse_values(response, prefix, scale);
 }
 
 std::optional<std::array<double, 3>> parse_roboteq_triple(
     std::string_view response,
     std::string_view prefix,
     double scale) {
-    const auto values = parse_values(response, prefix, 3, scale);
-    if (!values) {
+    const auto values = parse_roboteq_values(response, prefix, scale);
+    if (!values || values->size() != 3) {
         return std::nullopt;
     }
     return std::array<double, 3>{(*values)[0], (*values)[1], (*values)[2]};

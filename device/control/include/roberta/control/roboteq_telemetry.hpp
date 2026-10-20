@@ -4,6 +4,7 @@
 #include <chrono>
 #include <optional>
 #include <string_view>
+#include <vector>
 
 namespace roberta::control {
 
@@ -20,6 +21,10 @@ struct RoboteqTelemetrySnapshot {
 };
 
 [[nodiscard]] std::optional<std::array<double, 2>> parse_roboteq_pair(
+    std::string_view response,
+    std::string_view prefix,
+    double scale = 1.0);
+[[nodiscard]] std::optional<std::vector<double>> parse_roboteq_values(
     std::string_view response,
     std::string_view prefix,
     double scale = 1.0);

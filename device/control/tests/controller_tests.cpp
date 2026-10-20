@@ -358,6 +358,10 @@ int main() {
             const auto volts = parse_roboteq_pair("V=240:238", "V=", 0.1);
             require(volts && (*volts)[0] == 24.0 && (*volts)[1] == 23.8,
                 "battery-voltage response was not scaled correctly");
+            const auto voltage_values = parse_roboteq_values("V=0:238:240", "V=", 0.1);
+            require(voltage_values && voltage_values->size() == 3 &&
+                    (*voltage_values)[1] == 23.8,
+                "battery-voltage field was not parsed from an extended response");
             const auto temperatures = parse_roboteq_triple("T=31:32:33", "T=");
             require(temperatures && (*temperatures)[2] == 33.0,
                 "temperature response was not parsed correctly");

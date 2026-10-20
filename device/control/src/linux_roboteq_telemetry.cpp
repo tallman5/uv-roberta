@@ -169,7 +169,8 @@ RoboteqTelemetrySnapshot LinuxRoboteqTelemetry::refresh() {
         }
 
         bool recognized = false;
-        if (const auto values = parse_roboteq_pair(*line, "V=", 0.1)) {
+        if (const auto values = parse_roboteq_values(*line, "V=", 0.1);
+            values && values->size() >= 2) {
             latest_snapshot_.battery_volts = (*values)[1];
             recognized = true;
         } else if (const auto values = parse_roboteq_pair(*line, "S=")) {
