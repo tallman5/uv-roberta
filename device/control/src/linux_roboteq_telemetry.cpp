@@ -8,9 +8,9 @@
 #include <array>
 #include <cerrno>
 #include <chrono>
+#include <initializer_list>
 #include <stdexcept>
 #include <string>
-#include <utility>
 
 namespace roberta::control {
 namespace {
@@ -26,7 +26,8 @@ speed_t baud_constant(int baud) {
     }
 }
 
-constexpr auto kResponseTimeout = std::chrono::milliseconds(100);
+constexpr auto kWriteTimeout = std::chrono::milliseconds(250);
+constexpr auto kRefreshWindow = std::chrono::milliseconds(200);
 
 }  // namespace
 
@@ -62,6 +63,18 @@ LinuxRoboteqTelemetry::LinuxRoboteqTelemetry(std::string device, int baud) {
         throw std::runtime_error("Cannot configure the Roboteq serial port.");
     }
     tcflush(fd_, TCIOFLUSH);
+    try {
+        for (const auto command : {
+                 "^ECHOF 1", "?A", "?A", "?BA", "?M", "?T", "?V", "?S", "# 100"}) {
+            if (!send_command(command)) {
+                throw std::runtime_error("Timed out configuring Roboteq telemetry broadcast.");
+            }
+        }
+    } catch (...) {
+        close(fd_);
+        fd_ = -1;
+        throw;
+    }
 }
 
 LinuxRoboteqTelemetry::~LinuxRoboteqTelemetry() {
@@ -70,11 +83,11 @@ LinuxRoboteqTelemetry::~LinuxRoboteqTelemetry() {
     }
 }
 
-bool LinuxRoboteqTelemetry::send_query(std::string_view query_text) {
-    std::string command(query_text);
+bool LinuxRoboteqTelemetry::send_command(std::string_view command_text) {
+    std::string command(command_text);
     command.push_back('\r');
     std::size_t sent{};
-    const auto deadline = std::chrono::steady_clock::now() + kResponseTimeout;
+    const auto deadline = std::chrono::steady_clock::now() + kWriteTimeout;
     while (sent < command.size()) {
         const auto result = write(fd_, command.data() + sent, command.size() - sent);
         if (result > 0) {
@@ -82,7 +95,7 @@ bool LinuxRoboteqTelemetry::send_query(std::string_view query_text) {
             continue;
         }
         if (result < 0 && errno != EAGAIN && errno != EINTR) {
-            throw std::runtime_error("Failed writing a Roboteq telemetry query.");
+            throw std::runtime_error("Failed writing a Roboteq telemetry command.");
         }
 
         const auto remaining = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -92,17 +105,17 @@ bool LinuxRoboteqTelemetry::send_query(std::string_view query_text) {
         }
         pollfd descriptor{fd_, POLLOUT, 0};
         if (poll(&descriptor, 1, static_cast<int>(remaining)) < 0 && errno != EINTR) {
-            throw std::runtime_error("Failed waiting to write a Roboteq telemetry query.");
+            throw std::runtime_error("Failed waiting to write a Roboteq telemetry command.");
         }
         if ((descriptor.revents & (POLLERR | POLLHUP | POLLNVAL)) != 0) {
-            throw std::runtime_error("Roboteq serial connection failed while writing telemetry query.");
+            throw std::runtime_error("Roboteq serial connection failed while configuring telemetry.");
         }
     }
     return true;
 }
 
-std::optional<std::string> LinuxRoboteqTelemetry::read_line() {
-    const auto deadline = std::chrono::steady_clock::now() + kResponseTimeout;
+std::optional<std::string> LinuxRoboteqTelemetry::read_line(
+    std::chrono::steady_clock::time_point deadline) {
     std::array<char, 256> buffer{};
     for (;;) {
         const auto terminator = input_buffer_.find_first_of("\r\n");
@@ -147,62 +160,41 @@ std::optional<std::string> LinuxRoboteqTelemetry::read_line() {
     }
 }
 
-std::optional<std::string> LinuxRoboteqTelemetry::query(
-    std::string_view command,
-    std::string_view response_prefix) {
-    if (!send_query(command)) {
-        return std::nullopt;
-    }
-    const auto deadline = std::chrono::steady_clock::now() + kResponseTimeout;
-    while (std::chrono::steady_clock::now() < deadline) {
-        auto line = read_line();
-        if (!line) {
-            return std::nullopt;
-        }
-        if (line->starts_with(response_prefix)) {
-            return line;
-        }
-        if (*line == "-") {
-            return std::nullopt;
-        }
-    }
-    return std::nullopt;
-}
-
 RoboteqTelemetrySnapshot LinuxRoboteqTelemetry::refresh() {
-    RoboteqTelemetrySnapshot snapshot;
-    const auto read_pair = [&](std::string_view command, std::string_view prefix, double scale) {
-        const auto response = query(command, prefix);
-        if (!response) {
-            return std::optional<std::array<double, 2>>{};
+    const auto deadline = std::chrono::steady_clock::now() + kRefreshWindow;
+    for (;;) {
+        const auto line = read_line(deadline);
+        if (!line) {
+            break;
         }
-        ++snapshot.responses;
-        return parse_roboteq_pair(*response, prefix, scale);
-    };
 
-    if (const auto values = read_pair("?V", "V=", 0.1)) {
-        snapshot.battery_volts = (*values)[1];
-    }
-    if (const auto values = read_pair("?S", "S=", 1.0)) {
-        snapshot.speed_rpm = {(*values)[0], (*values)[1]};
-    }
-    if (const auto values = read_pair("?A", "A=", 0.1)) {
-        snapshot.motor_amps = {(*values)[0], (*values)[1]};
-    }
-    if (const auto values = read_pair("?BA", "BA=", 0.1)) {
-        snapshot.battery_amps = {(*values)[0], (*values)[1]};
-    }
-    if (const auto values = read_pair("?M", "M=", 0.1)) {
-        snapshot.power_percent = {(*values)[0], (*values)[1]};
-    }
-    if (const auto response = query("?T", "T=")) {
-        ++snapshot.responses;
-        if (const auto values = parse_roboteq_triple(*response, "T=")) {
-            snapshot.controller_temperature = (*values)[0];
-            snapshot.motor_temperature = {(*values)[1], (*values)[2]};
+        bool recognized = false;
+        if (const auto values = parse_roboteq_pair(*line, "V=", 0.1)) {
+            latest_snapshot_.battery_volts = (*values)[1];
+            recognized = true;
+        } else if (const auto values = parse_roboteq_pair(*line, "S=")) {
+            latest_snapshot_.speed_rpm = {(*values)[0], (*values)[1]};
+            recognized = true;
+        } else if (const auto values = parse_roboteq_pair(*line, "A=", 0.1)) {
+            latest_snapshot_.motor_amps = {(*values)[0], (*values)[1]};
+            recognized = true;
+        } else if (const auto values = parse_roboteq_pair(*line, "BA=", 0.1)) {
+            latest_snapshot_.battery_amps = {(*values)[0], (*values)[1]};
+            recognized = true;
+        } else if (const auto values = parse_roboteq_pair(*line, "M=", 0.1)) {
+            latest_snapshot_.power_percent = {(*values)[0], (*values)[1]};
+            recognized = true;
+        } else if (const auto values = parse_roboteq_triple(*line, "T=")) {
+            latest_snapshot_.controller_temperature = (*values)[0];
+            latest_snapshot_.motor_temperature = {(*values)[1], (*values)[2]};
+            recognized = true;
+        }
+        if (recognized) {
+            ++latest_snapshot_.responses;
+            latest_snapshot_.last_response_at = std::chrono::steady_clock::now();
         }
     }
-    return snapshot;
+    return latest_snapshot_;
 }
 
 }  // namespace roberta::control

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <chrono>
 #include <optional>
 #include <string_view>
 
@@ -14,6 +15,7 @@ struct RoboteqTelemetrySnapshot {
     std::array<std::optional<double>, 2> power_percent;
     std::array<std::optional<double>, 2> motor_temperature;
     std::optional<double> controller_temperature;
+    std::optional<std::chrono::steady_clock::time_point> last_response_at;
     int responses{};
 };
 

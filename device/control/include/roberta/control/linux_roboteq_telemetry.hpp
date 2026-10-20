@@ -2,6 +2,7 @@
 
 #include "roberta/control/roboteq_telemetry.hpp"
 
+#include <chrono>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -19,14 +20,13 @@ public:
     [[nodiscard]] RoboteqTelemetrySnapshot refresh();
 
 private:
-    [[nodiscard]] bool send_query(std::string_view query);
-    [[nodiscard]] std::optional<std::string> read_line();
-    [[nodiscard]] std::optional<std::string> query(
-        std::string_view command,
-        std::string_view response_prefix);
+    [[nodiscard]] bool send_command(std::string_view command);
+    [[nodiscard]] std::optional<std::string> read_line(
+        std::chrono::steady_clock::time_point deadline);
 
     int fd_{-1};
     std::string input_buffer_;
+    RoboteqTelemetrySnapshot latest_snapshot_;
 };
 
 }  // namespace roberta::control

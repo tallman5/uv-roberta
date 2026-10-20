@@ -167,6 +167,7 @@ std::string format_channel(
 void print_telemetry_status(
     ReceiverState& state,
     unsigned gpio,
+    bool receiver_available,
     const roberta::control::RoboteqTelemetrySnapshot& telemetry,
     const roberta::control::RcDriveConfig& config) {
     using namespace roberta::control;
@@ -179,9 +180,11 @@ void print_telemetry_status(
     }
 
     std::cout << "\033[H"
-              << "RC + Roboteq telemetry monitor (read-only, Ctrl-C to exit)\n"
-              << "Input: BCM GPIO " << gpio << " | Status: ";
-    if (!frame) {
+              << "RC + Roboteq telemetry monitor (no motor commands, Ctrl-C to exit)\n"
+              << "Input: BCM GPIO " << gpio << " | RC status: ";
+    if (!receiver_available) {
+        std::cout << "unavailable (Roboteq polling continues)";
+    } else if (!frame) {
         std::cout << "WAITING FOR SBUS";
     } else {
         const auto age = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -197,8 +200,10 @@ void print_telemetry_status(
         }
         std::cout << " age=" << age << "ms";
     }
-    std::cout << "\033[K\n\n"
-              << "SBUS channels (raw)                 | Roboteq (read-only)\n"
+    std::cout << "\033[K\n"
+              << "Roboteq serial: " << config.roboteq_device
+              << " @ " << config.roboteq_baud << " baud\033[K\n\n"
+              << "SBUS channels (raw)                 | Roboteq telemetry\n"
               << "------------------------------------+--------------------------------------\n";
 
     const auto left = static_cast<std::size_t>(config.left_motor_channel - 1);
@@ -225,8 +230,16 @@ void print_telemetry_status(
     print_side("Right", right);
     std::cout << " | Controller temp: "
               << format_metric(telemetry.controller_temperature, " C")
-              << "  Roboteq: " << (telemetry.responses > 0 ? "responding" : "no response")
-              << "\033[K\n"
+              << "  Roboteq: ";
+    if (!telemetry.last_response_at) {
+        std::cout << "NO DATA (check serial port, baud, and controller telemetry output)";
+    } else {
+        const auto age = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - *telemetry.last_response_at).count();
+        std::cout << (age > 500 ? "STALE DATA " : "broadcast data ")
+                  << age << " ms ago";
+    }
+    std::cout << "\033[K\n"
               << " | Battery estimate: ";
     if (battery_percent) {
         std::cout << *battery_percent << '%';
@@ -240,13 +253,14 @@ void print_telemetry_status(
 void run_telemetry_monitor(
     ReceiverState& state,
     unsigned gpio,
+    bool receiver_available,
     roberta::control::LinuxRoboteqTelemetry& roboteq,
     const roberta::control::RcDriveConfig& config) {
     using namespace std::chrono;
     auto next_refresh = steady_clock::now();
     while (!stopping) {
         const auto telemetry = roboteq.refresh();
-        print_telemetry_status(state, gpio, telemetry, config);
+        print_telemetry_status(state, gpio, receiver_available, telemetry, config);
         next_refresh += seconds(1);
         std::this_thread::sleep_until(next_refresh);
         if (steady_clock::now() > next_refresh + seconds(1)) {
@@ -276,30 +290,45 @@ int main(int argc, char** argv) {
         std::signal(SIGINT, on_signal);
         std::signal(SIGTERM, on_signal);
 
+        ReceiverState state;
+        bool receiver_available = false;
         pigpio_handle = pigpio_start(nullptr, nullptr);
         if (pigpio_handle < 0) {
-            throw std::runtime_error("Cannot connect to pigpiod. Check that the daemon is running.");
-        }
-
-        ReceiverState state;
-        if (set_mode(
-                static_cast<unsigned>(pigpio_handle),
-                gpio,
-                PI_INPUT) < 0 ||
-            (callback_id = callback_ex(
-                static_cast<unsigned>(pigpio_handle),
-                gpio,
-                EITHER_EDGE,
-                alert_callback,
-                &state)) < 0) {
-            throw std::runtime_error(
-                "Unable to configure the SBUS GPIO. Check BCM pin numbering and pigpiod.");
+            if (!options.telemetry) {
+                throw std::runtime_error("Cannot connect to pigpiod. Check that the daemon is running.");
+            }
+            std::cerr << "RC input unavailable; continuing with Roboteq telemetry only."
+                      << std::endl;
+        } else if (set_mode(
+                       static_cast<unsigned>(pigpio_handle),
+                       gpio,
+                       PI_INPUT) < 0 ||
+                   (callback_id = callback_ex(
+                       static_cast<unsigned>(pigpio_handle),
+                       gpio,
+                       EITHER_EDGE,
+                       alert_callback,
+                       &state)) < 0) {
+            if (!options.telemetry) {
+                throw std::runtime_error(
+                    "Unable to configure the SBUS GPIO. Check BCM pin numbering and pigpiod.");
+            }
+            std::cerr << "Unable to configure SBUS GPIO " << gpio
+                      << "; continuing with Roboteq telemetry only." << std::endl;
+            if (callback_id >= 0) {
+                callback_cancel(static_cast<unsigned>(callback_id));
+                callback_id = -1;
+            }
+            pigpio_stop(static_cast<unsigned>(pigpio_handle));
+            pigpio_handle = -1;
+        } else {
+            receiver_available = true;
         }
 
         TerminalScreen screen;
         if (options.telemetry) {
             telemetry.emplace(config->roboteq_device, config->roboteq_baud);
-            run_telemetry_monitor(state, gpio, *telemetry, *config);
+            run_telemetry_monitor(state, gpio, receiver_available, *telemetry, *config);
         } else {
             std::cout << "RC receiver monitor only; this program cannot command motors." << std::endl;
             while (!stopping) {
@@ -309,9 +338,13 @@ int main(int argc, char** argv) {
         }
         std::cout << std::endl;
 
-        callback_cancel(static_cast<unsigned>(callback_id));
+        if (callback_id >= 0) {
+            callback_cancel(static_cast<unsigned>(callback_id));
+        }
         callback_id = -1;
-        pigpio_stop(static_cast<unsigned>(pigpio_handle));
+        if (pigpio_handle >= 0) {
+            pigpio_stop(static_cast<unsigned>(pigpio_handle));
+        }
         return 0;
     } catch (const std::exception& error) {
         std::cerr << "roberta_rc_monitor: " << error.what() << std::endl;
