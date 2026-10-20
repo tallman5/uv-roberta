@@ -184,16 +184,16 @@ RoboteqTelemetrySnapshot LinuxRoboteqTelemetry::refresh() {
         snapshot.battery_volts = (*values)[1];
     }
     if (const auto values = read_pair("?S", "S=", 1.0)) {
-        snapshot.speed_rpm = {*values};
+        snapshot.speed_rpm = {(*values)[0], (*values)[1]};
     }
     if (const auto values = read_pair("?A", "A=", 0.1)) {
-        snapshot.motor_amps = {*values};
+        snapshot.motor_amps = {(*values)[0], (*values)[1]};
     }
     if (const auto values = read_pair("?BA", "BA=", 0.1)) {
-        snapshot.battery_amps = {*values};
+        snapshot.battery_amps = {(*values)[0], (*values)[1]};
     }
     if (const auto values = read_pair("?M", "M=", 0.1)) {
-        snapshot.power_percent = {*values};
+        snapshot.power_percent = {(*values)[0], (*values)[1]};
     }
     if (const auto response = query("?T", "T=")) {
         ++snapshot.responses;
