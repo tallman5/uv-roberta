@@ -11,6 +11,7 @@ add_library(roberta_control
   src/hardware.cpp
   src/rc_config.cpp
   src/rc_mapping.cpp
+  src/roboteq_telemetry.cpp
   src/sbus.cpp)
 target_include_directories(roberta_control PUBLIC include)
 target_compile_features(roberta_control PUBLIC cxx_std_20)
@@ -30,7 +31,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND
   find_package(Threads REQUIRED)
   find_path(PIGPIO_INCLUDE_DIR pigpiod_if2.h REQUIRED)
   find_library(PIGPIOD_IF2_LIBRARY pigpiod_if2 REQUIRED)
-  add_executable(roberta_rc_monitor src/linux_rc_monitor.cpp)
+  add_executable(roberta_rc_monitor
+    src/linux_rc_monitor.cpp
+    src/linux_roboteq_telemetry.cpp)
   target_include_directories(roberta_rc_monitor PRIVATE ${PIGPIO_INCLUDE_DIR})
   target_link_libraries(
     roberta_rc_monitor

@@ -21,3 +21,7 @@ The GPIO pin default is based on previous-version source in `to-delete`; verify 
 The local `roberta_rc_drive` executable maps calibrated SBUS throttle and steering sticks to the MDC2250's two motor channels. The setup script installs the executable and an example config, but does not install or start a service. See [the Phase 2 drive guide](phase2-drive-setup.md) for channel mapping, calibration, manual startup, and commissioning.
 
 Before motor power is enabled, verify the controller's serial settings and motor channel configuration, establish its host-loss watchdog behavior, and verify an independent physical emergency stop. Keep the frame raised and the command cap low for initial direction/stop tests. Treat example channel assignments and motor polarity as unverified until measured on this robot.
+
+## Phase 3: RC and Roboteq telemetry
+
+`roberta_rc_monitor --telemetry --config PATH` displays all SBUS channels and read-only Roboteq measurements, including shared battery voltage and left/right speed, current, power, and temperature. The battery percentage is a configurable voltage estimate, not a fuel gauge. See [the Phase 3 telemetry guide](phase3-telemetry.md) for operation and interpretation.

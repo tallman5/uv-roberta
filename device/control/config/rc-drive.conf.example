@@ -16,6 +16,7 @@ deadband=0.04
 receiver_timeout_ms=100
 roboteq_device=/dev/serial/by-id/usb-Roboteq_Motor_Controller_MDC2XXX-if00
 roboteq_baud=9600
+battery_nominal_volts=24
 max_motor_command=200
 left_motor_channel=2
 right_motor_channel=1

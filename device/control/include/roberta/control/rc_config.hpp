@@ -19,6 +19,7 @@ struct RcDriveConfig {
     std::string roboteq_device{
         "/dev/serial/by-id/usb-Roboteq_Motor_Controller_MDC2XXX-if00"};
     int roboteq_baud{9600};
+    double battery_nominal_volts{24.0};
     int max_motor_command{200};
     int left_motor_channel{2};
     int right_motor_channel{1};

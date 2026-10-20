@@ -4,7 +4,7 @@ Phase 1 has one purpose: confirm that the FrSky Taranis X9 Lite transmitter and 
 
 `Taranis X9 Lite → XM+ SBUS → Raspberry Pi console monitor`
 
-The monitor displays all 16 analog channels, the SBUS digital channels 17 and 18, and whether frames are current, stale, lost, or marked failsafe. This monitor mode does not open or command the motor controller. For wheel control, first complete the monitor checks and then follow [the Phase 2 drive guide](phase2-drive-setup.md).
+The default monitor displays all 16 analog channels, the SBUS digital channels 17 and 18, and whether frames are current, stale, lost, or marked failsafe. In its default mode it does not open the motor controller. An opt-in combined RC/Roboteq telemetry screen is documented in [the Phase 3 guide](phase3-telemetry.md). For wheel control, first complete the monitor checks and then follow [the Phase 2 drive guide](phase2-drive-setup.md).
 
 ## Wiring and safety
 

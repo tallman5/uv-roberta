@@ -127,6 +127,8 @@ RcDriveConfig load_rc_drive_config(const std::string& path) {
             }
         } else if (key == "roboteq_baud") {
             config.roboteq_baud = parse_int(value, key);
+        } else if (key == "battery_nominal_volts") {
+            config.battery_nominal_volts = parse_double(value, key);
         } else if (key == "max_motor_command") {
             config.max_motor_command = parse_int(value, key);
         } else if (key == "left_motor_channel") {
@@ -172,6 +174,10 @@ void validate_rc_drive_config(const RcDriveConfig& config, bool require_motor_de
         config.roboteq_baud != 115200) {
         throw std::runtime_error("roboteq_baud must be 9600, 19200, 38400, 57600, or 115200.");
     }
+    if (!std::isfinite(config.battery_nominal_volts) ||
+        config.battery_nominal_volts < 1.0 || config.battery_nominal_volts > 1000.0) {
+        throw std::runtime_error("battery_nominal_volts must be between 1 and 1000.");
+    }
     if (config.max_motor_command < 1 || config.max_motor_command > 1000) {
         throw std::runtime_error("max_motor_command must be between 1 and 1000.");
     }
@@ -212,6 +218,7 @@ void save_rc_drive_config(const std::string& path, const RcDriveConfig& config) 
                << "receiver_timeout_ms=" << config.receiver_timeout_ms << '\n'
                << "roboteq_device=" << config.roboteq_device << '\n'
                << "roboteq_baud=" << config.roboteq_baud << '\n'
+               << "battery_nominal_volts=" << config.battery_nominal_volts << '\n'
                << "max_motor_command=" << config.max_motor_command << '\n'
                << "left_motor_channel=" << config.left_motor_channel << '\n'
                << "right_motor_channel=" << config.right_motor_channel << '\n'

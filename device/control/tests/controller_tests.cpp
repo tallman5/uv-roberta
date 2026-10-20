@@ -3,6 +3,7 @@
 #include "roberta/control/rc_config.hpp"
 #include "roberta/control/rc_mapping.hpp"
 #include "roberta/control/sbus.hpp"
+#include "roberta/control/roboteq_telemetry.hpp"
 
 #include <cmath>
 #include <cstdlib>
@@ -352,6 +353,26 @@ int main() {
                 "invalid channel 10 value was accepted");
         });
 
+        run("Roboteq telemetry values are parsed and battery level is estimated", [&] {
+            using namespace roberta::control;
+            const auto volts = parse_roboteq_pair("V=240:238", "V=", 0.1);
+            require(volts && (*volts)[0] == 24.0 && (*volts)[1] == 23.8,
+                "battery-voltage response was not scaled correctly");
+            const auto temperatures = parse_roboteq_triple("T=31:32:33", "T=");
+            require(temperatures && (*temperatures)[2] == 33.0,
+                "temperature response was not parsed correctly");
+            require(!parse_roboteq_pair("V=240", "V="),
+                "incomplete channel response was accepted");
+            const std::optional<double> full_battery = 27.0;
+            const std::optional<double> empty_battery = 21.0;
+            require(estimate_battery_percent(full_battery, 24.0) == 100,
+                "full battery voltage did not clamp to 100 percent");
+            require(estimate_battery_percent(empty_battery, 24.0) == 0,
+                "low battery voltage did not clamp to 0 percent");
+            require(!estimate_battery_percent(std::nullopt, 24.0),
+                "battery percentage was reported without voltage readings");
+        });
+
         run("RC configuration is parsed and validated before arming", [&] {
             const roberta::control::RcDriveConfig defaults;
             require(
@@ -377,6 +398,7 @@ int main() {
                        << "receiver_timeout_ms=100\n"
                        << "roboteq_device=" << roboteq_device << '\n'
                        << "roboteq_baud=9600\n"
+                       << "battery_nominal_volts=24.5\n"
                        << "max_motor_command=200\n"
                        << "left_motor_channel=2\n"
                        << "right_motor_channel=1\n"
@@ -393,6 +415,8 @@ int main() {
             require(
                 config.roboteq_device == "/dev/serial/by-id/controller",
                 "Roboteq device path override was not parsed");
+            require(config.battery_nominal_volts == 24.5,
+                "nominal battery voltage was not parsed");
             require(config.left_motor_channel == 2 && config.right_motor_channel == 1,
                 "Roboteq motor-channel mapping was parsed incorrectly");
             roberta::control::validate_rc_drive_config(config, true);

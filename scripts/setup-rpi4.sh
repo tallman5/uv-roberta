@@ -100,6 +100,8 @@ echo "  2. Confirm receiver signal wiring on BCM GPIO 17 (or edit receiver_gpio)
 echo "  3. Run /usr/local/bin/roberta_rc_monitor and identify your stick channels."
 echo "  4. Follow docs/phase2-drive-setup.md to configure and calibrate before driving."
 echo "     The drive executable is not installed as or started by a service."
+echo "  5. For read-only RC and Roboteq readings, run:"
+echo "     /usr/local/bin/roberta_rc_monitor --telemetry --config /etc/uv-roberta/rc-drive.conf"
 if [[ -e /var/run/reboot-required ]]; then
   echo
   echo "A system update requires a reboot. Reboot before running the monitor."
