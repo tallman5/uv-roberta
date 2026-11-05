@@ -26,10 +26,23 @@ struct RcDriveConfig {
     bool left_motor_inverted{};
     bool right_motor_inverted{};
     int arm_neutral_ms{2000};
+    int zs_left_speed_gpio{12};
+    int zs_left_direction_gpio{24};
+    int zs_left_stop_gpio{22};
+    int zs_right_speed_gpio{13};
+    int zs_right_direction_gpio{23};
+    int zs_right_stop_gpio{27};
+    int zs_max_pwm{51};
+    int zs_pwm_frequency_hz{800};
+    bool zs_left_direction_inverted{};
+    bool zs_right_direction_inverted{true};
 };
 
 [[nodiscard]] RcDriveConfig load_rc_drive_config(const std::string& path);
-void validate_rc_drive_config(const RcDriveConfig& config, bool require_motor_device);
+void validate_rc_drive_config(
+    const RcDriveConfig& config,
+    bool require_motor_device,
+    bool require_zs_controller = false);
 void save_rc_drive_config(const std::string& path, const RcDriveConfig& config);
 
 }  // namespace roberta::control

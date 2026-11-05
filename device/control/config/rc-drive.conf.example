@@ -23,3 +23,15 @@ right_motor_channel=1
 left_motor_inverted=false
 right_motor_inverted=false
 arm_neutral_ms=2000
+# RioRand ZS-X11-H pair; BCM GPIO numbers from the previous-version controller.
+zs_left_speed_gpio=12
+zs_left_direction_gpio=24
+zs_left_stop_gpio=22
+zs_right_speed_gpio=13
+zs_right_direction_gpio=23
+zs_right_stop_gpio=27
+# PWM duty cap: 51/255 (20%) for initial commissioning.
+zs_max_pwm=51
+zs_pwm_frequency_hz=800
+zs_left_direction_inverted=false
+zs_right_direction_inverted=true

@@ -47,7 +47,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND
     add_executable(roberta_rc_drive
       src/linux_main.cpp
       src/linux_sbus_receiver.cpp
-      src/linux_roboteq_driver.cpp)
+      src/linux_roboteq_driver.cpp
+      src/linux_zs_x11_driver.cpp)
     target_include_directories(roberta_rc_drive PRIVATE ${PIGPIO_INCLUDE_DIR})
     target_link_libraries(roberta_rc_drive PRIVATE roberta_control)
     target_link_libraries(roberta_rc_drive PRIVATE ${PIGPIOD_IF2_LIBRARY} Threads::Threads)

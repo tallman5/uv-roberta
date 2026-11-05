@@ -5,6 +5,7 @@
 - Raspberry Pi 4
 - FrSky Taranis X9 Lite transmitter and FrSky XM Plus receiver
 - Roboteq MDC2250 controller connected over USB
+- Two RioRand ZS-X11-H controllers for the alternate model
 - Two powered-wheelchair drive motors
 - USB GPS receivers and USB cameras
 
@@ -16,11 +17,11 @@ Phase 1 implements only a local SBUS receiver monitor. It captures inverted SBUS
 
 The GPIO pin default is based on previous-version source in `to-delete`; verify the actual signal pin and voltage before connecting it. Phase 1 does not test or command the Roboteq controller, drive motors, switches as features, network paths, GPS, or cameras.
 
-## Phase 2: manual Roboteq drive
+## Phase 2: manual RC drive
 
-The local `roberta_rc_drive` executable maps calibrated SBUS throttle and steering sticks to the MDC2250's two motor channels. The setup script installs the executable and an example config, but does not install or start a service. See [the Phase 2 drive guide](phase2-drive-setup.md) for channel mapping, calibration, manual startup, and commissioning.
+The local `roberta_rc_drive` executable maps calibrated SBUS throttle and steering sticks to either the MDC2250's two motor channels or the pair of ZS-X11-H GPIO interfaces. Select only the controller connected to the current model with `--controller roboteq` or `--controller zs`; the other controller is not opened. The setup script installs the executable and an example config, but does not install or start a service. See [the Phase 2 drive guide](phase2-drive-setup.md) for channel mapping, calibration, manual startup, and commissioning.
 
-Before motor power is enabled, verify the controller's serial settings and motor channel configuration, establish its host-loss watchdog behavior, and verify an independent physical emergency stop. Keep the frame raised and the command cap low for initial direction/stop tests. Treat example channel assignments and motor polarity as unverified until measured on this robot.
+Before motor power is enabled, verify the Roboteq serial settings and motor channel configuration, establish its host-loss watchdog behavior, and verify an independent physical emergency stop. For the ZS boards, verify the legacy GPIO mapping, external PWM input, and active-low stop/direction wiring against the actual board and robot. Keep the frame raised and command caps low for initial direction/stop tests. Treat example channel assignments and motor polarity as unverified until measured on this robot.
 
 ## Phase 3: RC and Roboteq telemetry
 

@@ -408,7 +408,17 @@ int main() {
                        << "right_motor_channel=1\n"
                        << "left_motor_inverted=false\n"
                        << "right_motor_inverted=true\n"
-                       << "arm_neutral_ms=2000\n";
+                       << "arm_neutral_ms=2000\n"
+                       << "zs_left_speed_gpio=12\n"
+                       << "zs_left_direction_gpio=24\n"
+                       << "zs_left_stop_gpio=22\n"
+                       << "zs_right_speed_gpio=13\n"
+                       << "zs_right_direction_gpio=23\n"
+                       << "zs_right_stop_gpio=27\n"
+                       << "zs_max_pwm=51\n"
+                       << "zs_pwm_frequency_hz=800\n"
+                       << "zs_left_direction_inverted=false\n"
+                       << "zs_right_direction_inverted=true\n";
             };
 
             write_config("/dev/serial/by-id/controller");
@@ -423,7 +433,27 @@ int main() {
                 "nominal battery voltage was not parsed");
             require(config.left_motor_channel == 2 && config.right_motor_channel == 1,
                 "Roboteq motor-channel mapping was parsed incorrectly");
+            require(
+                config.zs_left_speed_gpio == 12 && config.zs_left_direction_gpio == 24 &&
+                    config.zs_left_stop_gpio == 22 && config.zs_right_speed_gpio == 13 &&
+                    config.zs_right_direction_gpio == 23 && config.zs_right_stop_gpio == 27,
+                "legacy ZS GPIO mapping defaults were incorrect");
+            require(config.zs_max_pwm == 51 && config.zs_pwm_frequency_hz == 800,
+                "conservative ZS PWM defaults were incorrect");
+            require(!config.zs_left_direction_inverted && config.zs_right_direction_inverted,
+                "ZS direction inversions were not parsed");
             roberta::control::validate_rc_drive_config(config, true);
+
+            auto invalid_zs_pins = config;
+            invalid_zs_pins.zs_right_stop_gpio = invalid_zs_pins.receiver_gpio;
+            roberta::control::validate_rc_drive_config(invalid_zs_pins, false);
+            bool rejected_duplicate_pin = false;
+            try {
+                roberta::control::validate_rc_drive_config(invalid_zs_pins, false, true);
+            } catch (const std::runtime_error&) {
+                rejected_duplicate_pin = true;
+            }
+            require(rejected_duplicate_pin, "duplicate receiver and ZS GPIO pins were accepted");
 
             write_config("");
             const auto default_path_config = roberta::control::load_rc_drive_config(path.string());

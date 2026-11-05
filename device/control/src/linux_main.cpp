@@ -2,6 +2,7 @@
 #include "roberta/control/hardware.hpp"
 #include "roberta/control/linux_roboteq_driver.hpp"
 #include "roberta/control/linux_sbus_receiver.hpp"
+#include "roberta/control/linux_zs_x11_driver.hpp"
 #include "roberta/control/rc_config.hpp"
 
 #include <pigpiod_if2.h>
@@ -15,6 +16,7 @@
 #include <exception>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <string>
 #include <thread>
@@ -31,6 +33,7 @@ void on_signal(int) {
 
 struct Options {
     std::string config_path{"/etc/uv-roberta/rc-drive.conf"};
+    std::string controller{"roboteq"};
     bool arm{};
     bool monitor{};
     bool calibrate{};
@@ -48,10 +51,16 @@ Options parse_options(int argc, char** argv) {
             options.calibrate = true;
         } else if (argument == "--config" && index + 1 < argc) {
             options.config_path = argv[++index];
+        } else if (argument == "--controller" && index + 1 < argc) {
+            options.controller = argv[++index];
         } else {
             throw std::runtime_error(
-                "Usage: roberta_rc_drive [--config PATH] [--monitor | --calibrate | --arm]");
+                "Usage: roberta_rc_drive [--config PATH] [--controller roboteq|zs] "
+                "[--monitor | --calibrate | --arm]");
         }
+    }
+    if (options.controller != "roboteq" && options.controller != "zs") {
+        throw std::runtime_error("--controller must be either roboteq or zs.");
     }
     if (static_cast<int>(options.arm) + static_cast<int>(options.monitor) +
             static_cast<int>(options.calibrate) != 1) {
@@ -170,7 +179,7 @@ void run_monitor(roberta::control::LinuxSbusReceiver& receiver) {
 void run_armed(
     const roberta::control::RcDriveConfig& config,
     roberta::control::LinuxSbusReceiver& receiver,
-    roberta::control::LinuxRoboteqDriver& motor) {
+    roberta::control::MotorDriver& motor) {
     using namespace std::chrono;
     using namespace roberta::control;
 
@@ -222,7 +231,7 @@ void run_armed(
             }
             motor.stop();
             if (!motor.healthy()) {
-                throw std::runtime_error("Roboteq did not accept the startup stop command.");
+                throw std::runtime_error("Motor controller did not accept the startup stop command.");
             }
         } else {
             const auto result = control_loop.tick(now, std::nullopt);
@@ -230,12 +239,13 @@ void run_armed(
                 if (result.fault == ControlFault::MotorUnavailable) {
                     std::cerr << "Motor controller unavailable; output stopped." << std::endl;
                 } else if (result.fault == ControlFault::MotorWriteFailed) {
-                    std::cerr << "Motor command write failed; output stopped. Restart to re-arm." << std::endl;
+                    std::cerr << "Motor command write failed; output stopped. Restart to re-arm."
+                              << std::endl;
                 }
                 last_fault = result.fault;
             }
             if (!motor.healthy()) {
-                throw std::runtime_error("Roboteq serial output failed. Motor output was stopped.");
+                throw std::runtime_error("Motor controller output failed. Motor output was stopped.");
             }
         }
 
@@ -252,12 +262,15 @@ void run_armed(
 int main(int argc, char** argv) {
     using namespace roberta::control;
 
-    std::optional<LinuxRoboteqDriver> motor;
+    std::unique_ptr<MotorDriver> motor;
     int pigpio_handle = -1;
     try {
         const auto options = parse_options(argc, argv);
         auto config = load_rc_drive_config(options.config_path);
-        validate_rc_drive_config(config, options.arm);
+        validate_rc_drive_config(
+            config,
+            options.arm && options.controller == "roboteq",
+            options.arm && options.controller == "zs");
 
         std::signal(SIGINT, on_signal);
         std::signal(SIGTERM, on_signal);
@@ -281,23 +294,31 @@ int main(int argc, char** argv) {
             std::cout << "Calibration only; motors are not opened or commanded." << std::endl;
             run_calibration(options.config_path, config, receiver);
         } else {
-            motor.emplace(
-                config.roboteq_device,
-                config.roboteq_baud,
-                config.max_motor_command,
-                config.left_motor_channel,
-                config.right_motor_channel,
-                config.left_motor_inverted,
-                config.right_motor_inverted);
+            if (options.controller == "roboteq") {
+                motor = std::make_unique<LinuxRoboteqDriver>(
+                    config.roboteq_device,
+                    config.roboteq_baud,
+                    config.max_motor_command,
+                    config.left_motor_channel,
+                    config.right_motor_channel,
+                    config.left_motor_inverted,
+                    config.right_motor_inverted);
+            } else {
+                motor = std::make_unique<LinuxZsX11Driver>(
+                    static_cast<unsigned>(pigpio_handle), config);
+            }
             motor->stop();
             if (!motor->healthy()) {
-                throw std::runtime_error("Roboteq did not accept the startup stop command.");
+                throw std::runtime_error("Motor controller did not accept the startup stop command.");
             }
+            std::cout << "Starting RC control for " << options.controller
+                      << " only; the other controller is not opened." << std::endl;
             run_armed(config, receiver, *motor);
         }
     } catch (const std::exception& error) {
         if (motor) {
             motor->stop();
+            motor.reset();
         }
         std::cerr << "roberta_rc_drive: " << error.what() << std::endl;
         if (pigpio_handle >= 0) {
@@ -308,6 +329,7 @@ int main(int argc, char** argv) {
 
     if (motor) {
         motor->stop();
+        motor.reset();
     }
     if (pigpio_handle >= 0) {
         pigpio_stop(static_cast<unsigned>(pigpio_handle));

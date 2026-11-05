@@ -4,7 +4,7 @@ Phase 1 confirms the radio link:
 
 `FrSky Taranis X9 Lite → XM+ SBUS → Raspberry Pi 4 console monitor`
 
-The C++ monitor displays all 16 SBUS analog channels, digital channels 17/18, and reports stale frames, frame loss, and receiver failsafe. Phase 2 adds a separate manually started executable to control the Roboteq MDC2250 and wheels from the transmitter. Phase 3 adds an opt-in read-only combined RC and Roboteq telemetry screen. See [the Phase 1 setup guide](docs/phase1-setup.md) for receiver commissioning, [the Phase 2 drive guide](docs/phase2-drive-setup.md) for motor configuration and testing, and [the Phase 3 telemetry guide](docs/phase3-telemetry.md) for the combined monitor.
+The C++ monitor displays all 16 SBUS analog channels, digital channels 17/18, and reports stale frames, frame loss, and receiver failsafe. Phase 2 adds a separate manually started executable to control either the Roboteq MDC2250 or a pair of RioRand ZS-X11-H controllers from the transmitter; only one target is selected per run. Phase 3 adds an opt-in read-only combined RC and Roboteq telemetry screen. See [the Phase 1 setup guide](docs/phase1-setup.md) for receiver commissioning, [the Phase 2 drive guide](docs/phase2-drive-setup.md) for motor configuration and testing, and [the Phase 3 telemetry guide](docs/phase3-telemetry.md) for the combined monitor.
 
 - `device/control/`: SBUS decoding, control policy, hardware-free tests, and the Pi monitor and drive executables.
 - `scripts/setup-rpi4.sh`: installs Pi dependencies, both executables, and an example drive configuration.
@@ -24,4 +24,4 @@ cmake --build build --config Release
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-On Raspberry Pi OS, follow [the Phase 1 setup guide](docs/phase1-setup.md). The monitor reads the SBUS signal on BCM GPIO 17 by default; select another pin with `--gpio`. The setup script also builds and installs the manual drive executable, but does not start it or install a service.
+On Raspberry Pi OS, follow [the Phase 1 setup guide](docs/phase1-setup.md). The monitor reads the SBUS signal on BCM GPIO 17 by default; select another pin with `--gpio`. The setup script also builds and installs the manual drive executable, but does not start it or install a service. Select hardware explicitly with `roberta_rc_drive --controller roboteq --arm` or `roberta_rc_drive --controller zs --arm`.

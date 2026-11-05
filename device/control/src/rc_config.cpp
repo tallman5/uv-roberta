@@ -1,10 +1,12 @@
 #include "roberta/control/rc_config.hpp"
 
+#include <algorithm>
 #include <charconv>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
+#include <iterator>
 #include <stdexcept>
 #include <string_view>
 
@@ -141,6 +143,26 @@ RcDriveConfig load_rc_drive_config(const std::string& path) {
             config.right_motor_inverted = parse_bool(value, key);
         } else if (key == "arm_neutral_ms") {
             config.arm_neutral_ms = parse_int(value, key);
+        } else if (key == "zs_left_speed_gpio") {
+            config.zs_left_speed_gpio = parse_int(value, key);
+        } else if (key == "zs_left_direction_gpio") {
+            config.zs_left_direction_gpio = parse_int(value, key);
+        } else if (key == "zs_left_stop_gpio") {
+            config.zs_left_stop_gpio = parse_int(value, key);
+        } else if (key == "zs_right_speed_gpio") {
+            config.zs_right_speed_gpio = parse_int(value, key);
+        } else if (key == "zs_right_direction_gpio") {
+            config.zs_right_direction_gpio = parse_int(value, key);
+        } else if (key == "zs_right_stop_gpio") {
+            config.zs_right_stop_gpio = parse_int(value, key);
+        } else if (key == "zs_max_pwm") {
+            config.zs_max_pwm = parse_int(value, key);
+        } else if (key == "zs_pwm_frequency_hz") {
+            config.zs_pwm_frequency_hz = parse_int(value, key);
+        } else if (key == "zs_left_direction_inverted") {
+            config.zs_left_direction_inverted = parse_bool(value, key);
+        } else if (key == "zs_right_direction_inverted") {
+            config.zs_right_direction_inverted = parse_bool(value, key);
         } else {
             throw std::runtime_error("Unknown config key on line " + std::to_string(line_number) + ": " + key);
         }
@@ -155,7 +177,10 @@ RcDriveConfig load_rc_drive_config(const std::string& path) {
     return config;
 }
 
-void validate_rc_drive_config(const RcDriveConfig& config, bool require_motor_device) {
+void validate_rc_drive_config(
+    const RcDriveConfig& config,
+    bool require_motor_device,
+    bool require_zs_controller) {
     if (config.receiver_gpio < 0 || config.receiver_gpio > 27) {
         throw std::runtime_error("receiver_gpio must be a BCM GPIO number from 0 through 27.");
     }
@@ -180,6 +205,38 @@ void validate_rc_drive_config(const RcDriveConfig& config, bool require_motor_de
     }
     if (config.max_motor_command < 1 || config.max_motor_command > 1000) {
         throw std::runtime_error("max_motor_command must be between 1 and 1000.");
+    }
+    const int zs_pins[] = {
+        config.zs_left_speed_gpio,
+        config.zs_left_direction_gpio,
+        config.zs_left_stop_gpio,
+        config.zs_right_speed_gpio,
+        config.zs_right_direction_gpio,
+        config.zs_right_stop_gpio
+    };
+    for (const int pin : zs_pins) {
+        if (require_zs_controller && (pin < 0 || pin > 27)) {
+            throw std::runtime_error("ZS GPIO pins must be BCM GPIO numbers from 0 through 27.");
+        }
+    }
+    if (require_zs_controller) {
+        for (std::size_t first = 0; first < std::size(zs_pins); ++first) {
+            for (std::size_t second = first + 1; second < std::size(zs_pins); ++second) {
+                if (zs_pins[first] == zs_pins[second]) {
+                    throw std::runtime_error("ZS output GPIO pins must all be distinct.");
+                }
+            }
+        }
+        if (std::find(std::begin(zs_pins), std::end(zs_pins), config.receiver_gpio) !=
+            std::end(zs_pins)) {
+            throw std::runtime_error("The SBUS input GPIO must not be used by a ZS output.");
+        }
+        if (config.zs_max_pwm < 1 || config.zs_max_pwm > 255) {
+            throw std::runtime_error("zs_max_pwm must be between 1 and 255.");
+        }
+        if (config.zs_pwm_frequency_hz < 50 || config.zs_pwm_frequency_hz > 20000) {
+            throw std::runtime_error("zs_pwm_frequency_hz must be between 50 and 20000.");
+        }
     }
     if ((config.left_motor_channel != 1 && config.left_motor_channel != 2) ||
         (config.right_motor_channel != 1 && config.right_motor_channel != 2) ||
@@ -224,7 +281,19 @@ void save_rc_drive_config(const std::string& path, const RcDriveConfig& config) 
                << "right_motor_channel=" << config.right_motor_channel << '\n'
                << "left_motor_inverted=" << (config.left_motor_inverted ? "true" : "false") << '\n'
                << "right_motor_inverted=" << (config.right_motor_inverted ? "true" : "false") << '\n'
-               << "arm_neutral_ms=" << config.arm_neutral_ms << '\n';
+               << "arm_neutral_ms=" << config.arm_neutral_ms << '\n'
+               << "zs_left_speed_gpio=" << config.zs_left_speed_gpio << '\n'
+               << "zs_left_direction_gpio=" << config.zs_left_direction_gpio << '\n'
+               << "zs_left_stop_gpio=" << config.zs_left_stop_gpio << '\n'
+               << "zs_right_speed_gpio=" << config.zs_right_speed_gpio << '\n'
+               << "zs_right_direction_gpio=" << config.zs_right_direction_gpio << '\n'
+               << "zs_right_stop_gpio=" << config.zs_right_stop_gpio << '\n'
+               << "zs_max_pwm=" << config.zs_max_pwm << '\n'
+               << "zs_pwm_frequency_hz=" << config.zs_pwm_frequency_hz << '\n'
+               << "zs_left_direction_inverted="
+               << (config.zs_left_direction_inverted ? "true" : "false") << '\n'
+               << "zs_right_direction_inverted="
+               << (config.zs_right_direction_inverted ? "true" : "false") << '\n';
         if (!output) {
             throw std::runtime_error("Failed while writing config file: " + temporary.string());
         }
