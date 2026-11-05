@@ -12,7 +12,7 @@ Start the executable manually with exactly one `--controller` target. It opens a
 - Keep the frame securely raised with both drive wheels clear of the ground for initial tests. Keep people, cables, and loose items clear of the wheels.
 - Have a verified, independent physical motor-power emergency stop immediately accessible. Do not rely on Ctrl-C, the radio failsafe, or this program as the only emergency stop.
 - Verify the Roboteq's serial protocol, baud rate, channel operating modes, motor wiring, and motor/controller configuration against the MDC2250 documentation and this robot's wiring. In particular, verify the controller's command watchdog/failsafe behavior for a disconnected or crashed host before powering the motors.
-- For the ZS-X11-H boards, verify the speed, direction, and stop connections against the board documentation and the robot wiring. The defaults below are carried over from the previous-version controller source and are not proof of the current wiring. The board wiring reference shows a 50 Hz–20 kHz external PWM input and active-low direction/stop controls; verify the exact logic and signal voltage for your boards. Never connect a board 5 V output to a Pi GPIO.
+- For the ZS-X11-H boards, verify the speed, direction, and stop connections against the board documentation and the robot wiring. The defaults below are carried over from the previous-version controller source and are not proof of the current wiring. The board reference shows a 50 Hz–20 kHz external PWM input, a 2.5–5 V PWM signal, and low-level direction/stop control. The Pi outputs 3.3 V logic; verify that the exact board version recognizes it. Never connect a board 5 V output to a Pi GPIO.
 - Before using external PWM on a ZS-X11-H, follow its instructions for disabling/minimizing its on-board speed potentiometer. Test one board at a time with the drive wheels raised, the physical emergency stop ready, and the low PWM cap in place.
 - Verify wheel direction with the drive wheels raised and the motor command limit kept low. Stop and correct the channel inversion/wiring if a wheel turns the wrong way. Do not test direction with the wheels on the ground.
 - Keep transmitter failsafe configured to stop the receiver outputs. The runtime rejects SBUS failsafe and lost-frame data, stops both motor outputs when the link goes stale, and disarms after link loss. A restored link does not resume motion: both sticks must be neutral for the configured arm hold time.
@@ -42,6 +42,24 @@ sudoedit /etc/uv-roberta/rc-drive.conf
 Set `receiver_gpio` to the BCM GPIO connected to SBUS. Set `throttle_channel` and `steering_channel` to the observed channel numbers (1–16); the example values are only placeholders. The Roboteq device defaults to `/dev/serial/by-id/usb-Roboteq_Motor_Controller_MDC2XXX-if00`; change `roboteq_device` in the config if this controller appears at another path. An empty `roboteq_device` setting also uses this default. Set `roboteq_baud` to the controller's configured baud rate. The configured left/right Roboteq channels must be distinct channels 1 and 2.
 
 The ZS defaults are BCM GPIO 12/24/22 for left speed/direction/stop and 13/23/27 for right speed/direction/stop, matching [the legacy controller header](../to-delete/controller/controller.h) and [implementation](../to-delete/controller/controller.cpp). Verify the wiring and that these GPIOs do not conflict with your SBUS pin before powering the boards. The Pi generates 800 Hz PWM; `zs_max_pwm=51` limits duty to 51/255 (20%) at full stick, with channel 10 further selecting one-third, two-thirds, or the full configured cap. The board wiring reference also calls for its external-PWM selection link and speed potentiometer set to minimum; verify the exact jumper configuration on your board. Keep this commissioning cap until direction and stop behavior are verified. The right direction is inverted by default to match the old source; set either `zs_*_direction_inverted` value as needed after a raised-wheel test.
+
+The following are software defaults, not confirmation of the installed harness. BCM numbers differ from physical header pin numbers:
+
+| Function | BCM GPIO | Pi physical header pin |
+| --- | ---: | ---: |
+| SBUS receiver input | 17 | 11 |
+| Left ZS speed (PWM) | 12 | 32 |
+| Left ZS direction | 24 | 18 |
+| Left ZS stop (active low) | 22 | 15 |
+| Right ZS speed (PWM) | 13 | 33 |
+| Right ZS direction | 23 | 16 |
+| Right ZS stop (active low) | 27 | 13 |
+
+![ZS-X11-H wiring reference](../images/zs-x11h-wiring.jpg)
+
+![ZS-X11-H schematic reference](../images/zs-x11h-schematic.jpg)
+
+Use the board connector labels rather than wire color alone; the photo and wiring drawings are references and do not verify the installed board revision or harness.
 
 Keep `max_motor_command` at the conservative example value of 200 (20% of the controller's command range) or lower for commissioning. The transmitter's channel 10 three-position switch sets the active cap to one third when low, two thirds when medium, and the configured `max_motor_command` when high. For example, with `max_motor_command=200`, those caps are approximately 66, 133, and 200. The low/medium/high positions are classified from the SBUS range (172–1811); check channel 10 in monitor mode and verify all three positions before arming. An out-of-range channel 10 value is treated as invalid RC input and stops the motors. This is a software command cap, not a guarantee of a particular wheel speed or torque. Do not raise the configured cap until low-limit operation, motor directions, stop behavior, and the physical emergency stop have been verified.
 

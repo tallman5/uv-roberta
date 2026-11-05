@@ -8,10 +8,22 @@ The default monitor displays all 16 analog channels, the SBUS digital channels 1
 
 ## Wiring and safety
 
-1. Identify the XM+ receiver's SBUS output, ground, and required supply voltage using its documentation.
+![FrSky XM+ receiver pinout](../images/frsky-xm.png)
+
+The receiver drawing identifies the SBUS, +5V, and GND pads. It does not establish that the SBUS signal is electrically compatible with the Pi or that the Pi is an appropriate receiver power source.
+
+| XM+ connection | Raspberry Pi connection |
+| --- | --- |
+| SBUS | BCM GPIO 17 (physical header pin 11) by default; use another configured BCM GPIO if needed |
+| GND | Common ground with the Pi |
+| +5V | Regulated receiver supply at the voltage required by the receiver; do not connect to a Pi GPIO |
+
+![Raspberry Pi 4 header pinout](../images/rpi-pinout.png)
+
+1. Verify the receiver supply requirements and the actual SBUS output pin using its documentation.
 2. Make sure the Pi and receiver share ground.
-3. Verify with a meter or level shifter documentation that the SBUS signal reaching the Pi is no more than 3.3 V. Raspberry Pi GPIO pins are not 5 V tolerant.
-4. Connect SBUS signal to BCM GPIO 17 (physical header pin 11), or note the BCM pin you choose.
+3. Verify with a meter or level-shifter documentation that the SBUS signal reaching the Pi is no more than 3.3 V. Raspberry Pi GPIO pins are not 5 V tolerant.
+4. Connect SBUS signal to BCM GPIO 17 (physical header pin 11), or note the BCM pin you choose. BCM numbering is not physical header pin numbering.
 5. Do not connect the signal until the wiring and voltage are verified. Do not connect the receiver to a Pi GPIO if its output voltage is unknown or above 3.3 V.
 
 The BCM GPIO 17 default is based on prior-version code. Use `--gpio BCM_PIN` if your receiver is wired to another GPIO.
