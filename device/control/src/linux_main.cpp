@@ -24,6 +24,7 @@
 #include <thread>
 #include <utility>
 #include <vector>
+#include <unistd.h>
 
 namespace {
 
@@ -180,8 +181,11 @@ void run_monitor(roberta::control::LinuxSbusReceiver& receiver) {
 
 void print_drive_table_header(
     const roberta::control::RcDriveConfig& config,
-    bool zs_controller) {
-    std::cout << "State      | RC CH" << config.mapping.throttle_channel + 1
+    bool zs_controller,
+    bool interactive) {
+    std::cout << "Live RC and motor output values (ZS PWM shown as duty/max; STOPn=1 means enabled)"
+              << (interactive ? "\033[K" : "") << '\n'
+              << "State      | RC CH" << config.mapping.throttle_channel + 1
               << " raw | RC CH" << config.mapping.steering_channel + 1
               << " raw | RC CH10 | Throttle | Steering | Left cmd | Right cmd";
     if (zs_controller) {
@@ -192,7 +196,7 @@ void print_drive_table_header(
                   << " | R DIR (GPIO" << config.zs_right_direction_gpio << ")"
                   << " | R STOPn (GPIO" << config.zs_right_stop_gpio << ')';
     }
-    std::cout << '\n';
+    std::cout << (interactive ? "\033[K" : "") << '\n';
 }
 
 void print_drive_table_row(
@@ -201,7 +205,8 @@ void print_drive_table_row(
     const std::optional<roberta::control::SbusFrame>& raw_frame,
     const std::optional<roberta::control::RcFrame>& rc,
     const roberta::control::ControlResult& result,
-    bool armed) {
+    bool armed,
+    bool interactive) {
     using namespace roberta::control;
 
     const char* state = result.fault != ControlFault::None
@@ -242,7 +247,7 @@ void print_drive_table_row(
         print_zs_output(result.output.left, true);
         print_zs_output(result.output.right, false);
     }
-    std::cout << '\n' << std::flush;
+    std::cout << (interactive ? "\033[K\033[J" : "") << '\n' << std::flush;
 }
 
 void run_armed(
@@ -267,11 +272,14 @@ void run_armed(
     bool armed = false;
     std::optional<ControlFault> last_fault;
     auto next_report = next_tick;
-    std::cout << "Waiting for both sticks to remain neutral for "
-              << config.arm_neutral_ms << " ms before arming." << std::endl;
-    std::cout << "Live RC and motor output values (ZS PWM shown as duty/max; STOPn=1 means enabled):"
-              << std::endl;
-    print_drive_table_header(config, zs_controller);
+    const bool interactive = isatty(STDOUT_FILENO) != 0;
+    if (interactive) {
+        std::cout << "\033[2J\033[H";
+    } else {
+        std::cout << "Waiting for both sticks to remain neutral for "
+                  << config.arm_neutral_ms << " ms before arming." << std::endl;
+        print_drive_table_header(config, zs_controller, interactive);
+    }
 
     while (!stopping) {
         const auto now = steady_clock::now();
@@ -299,7 +307,7 @@ void run_armed(
                     neutral_timer_active = true;
                 } else if (now - neutral_since >= milliseconds(config.arm_neutral_ms)) {
                     armed = true;
-                    std::cout << "RC link valid and neutral. Drive control armed." << std::endl;
+                    std::cerr << "RC link valid and neutral. Drive control armed." << std::endl;
                 }
             } else {
                 neutral_timer_active = false;
@@ -325,13 +333,18 @@ void run_armed(
         }
 
         if (now >= next_report) {
+            if (interactive) {
+                std::cout << "\033[H";
+                print_drive_table_header(config, zs_controller, interactive);
+            }
             print_drive_table_row(
                 config,
                 zs_controller,
                 receiver.latest_frame(),
                 frame,
                 result,
-                armed);
+                armed,
+                interactive);
             next_report = now + milliseconds(200);
         }
 
