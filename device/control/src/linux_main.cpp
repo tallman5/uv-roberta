@@ -412,8 +412,8 @@ void run_controller_test(
 
     std::cout << "CONTROLLER TEST: wheels must be securely raised, people clear, and the "
                  "physical emergency stop within reach.\n"
-              << "Each wheel will pulse forward and reverse separately for 1 second, "
-              << "capped at " << (zs_controller
+              << "Each wheel ramps up for 1 second, holds for 500 ms, then ramps down for 1 second. "
+              << "Output is capped at " << (zs_controller
                                       ? std::to_string(test_pwm) + "/255 PWM"
                                       : std::to_string(test_command) + " command units")
               << ". Type TEST to continue: " << std::flush;
@@ -434,18 +434,44 @@ void run_controller_test(
         {"right forward", {0.0, test_level}},
         {"right reverse", {0.0, -test_level}}
     };
+    constexpr auto kRampStep = 20ms;
+    constexpr unsigned kRampSteps = 50;
+    const auto ramp_output = [&motor](const MotorOutput& target, bool ramp_up) {
+        for (unsigned index = 1; index <= kRampSteps; ++index) {
+            if (stopping) {
+                return false;
+            }
+            const double fraction = ramp_up
+                ? static_cast<double>(index) / kRampSteps
+                : static_cast<double>(kRampSteps - index) / kRampSteps;
+            const MotorOutput output{target.left * fraction, target.right * fraction};
+            if (!motor.healthy() || !motor.apply(output)) {
+                motor.stop();
+                throw std::runtime_error("Motor controller rejected a ramp command.");
+            }
+            std::this_thread::sleep_for(kRampStep);
+        }
+        return true;
+    };
+    const auto hold_output = [] {
+        const auto deadline = std::chrono::steady_clock::now() + 500ms;
+        while (!stopping && std::chrono::steady_clock::now() < deadline) {
+            std::this_thread::sleep_for(20ms);
+        }
+    };
 
     for (const auto& step : steps) {
         if (stopping) {
             break;
         }
         std::cout << "Testing " << step.name << "..." << std::endl;
-        if (!motor.healthy() || !motor.apply(step.output)) {
-            motor.stop();
-            throw std::runtime_error("Motor controller rejected the " + std::string(step.name) +
-                                     " test command.");
+        if (!ramp_output(step.output, true)) {
+            break;
         }
-        std::this_thread::sleep_for(1s);
+        hold_output();
+        if (!ramp_output(step.output, false)) {
+            break;
+        }
         motor.stop();
         if (!motor.healthy()) {
             throw std::runtime_error("Motor controller failed while stopping after the " +
