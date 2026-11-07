@@ -179,27 +179,7 @@ void run_monitor(roberta::control::LinuxSbusReceiver& receiver) {
     }
 }
 
-void print_drive_table_header(
-    const roberta::control::RcDriveConfig& config,
-    bool zs_controller,
-    bool interactive) {
-    std::cout << "Live RC and motor output values (ZS PWM shown as duty/max; STOPn=1 means enabled)"
-              << (interactive ? "\033[K" : "") << '\n'
-              << "State      | RC CH" << config.mapping.throttle_channel + 1
-              << " raw | RC CH" << config.mapping.steering_channel + 1
-              << " raw | RC CH10 | Throttle | Steering | Left cmd | Right cmd";
-    if (zs_controller) {
-        std::cout << " | L PWM (GPIO" << config.zs_left_speed_gpio << ")"
-                  << " | L DIR (GPIO" << config.zs_left_direction_gpio << ")"
-                  << " | L STOPn (GPIO" << config.zs_left_stop_gpio << ")"
-                  << " | R PWM (GPIO" << config.zs_right_speed_gpio << ")"
-                  << " | R DIR (GPIO" << config.zs_right_direction_gpio << ")"
-                  << " | R STOPn (GPIO" << config.zs_right_stop_gpio << ')';
-    }
-    std::cout << (interactive ? "\033[K" : "") << '\n';
-}
-
-void print_drive_table_row(
+void print_drive_table(
     const roberta::control::RcDriveConfig& config,
     bool zs_controller,
     const std::optional<roberta::control::SbusFrame>& raw_frame,
@@ -212,42 +192,84 @@ void print_drive_table_row(
     const char* state = result.fault != ControlFault::None
         ? "FAULT"
         : !rc ? "NO RC" : armed ? "ARMED" : "ARMING";
-    std::cout << std::left << std::setw(10) << state << " | " << std::right;
-    const auto print_channel = [&raw_frame](unsigned channel) {
-        if (raw_frame) {
-            std::cout << std::setw(7) << raw_frame->channels[channel];
-        } else {
-            std::cout << std::setw(7) << "--";
-        }
+    std::cout << "RC channels and drive outputs | " << state
+              << (interactive ? "\033[K" : "") << '\n';
+
+    const auto print_row = [interactive](
+                               const std::string& channel,
+                               const std::string& channel_value,
+                               const std::string& parameter = {},
+                               const std::string& parameter_value = {}) {
+        std::cout << std::left << std::setw(14) << channel
+                  << std::setw(10) << channel_value
+                  << std::setw(20) << parameter << parameter_value
+                  << (interactive ? "\033[K" : "") << '\n';
     };
-    print_channel(config.mapping.throttle_channel);
-    std::cout << " | ";
-    print_channel(config.mapping.steering_channel);
-    std::cout << " | ";
-    print_channel(9);
-    std::cout << std::fixed << std::setprecision(2)
-              << " | " << std::setw(8) << (rc ? rc->drive.throttle : 0.0)
-              << " | " << std::setw(8) << (rc ? rc->drive.steering : 0.0)
-              << " | " << std::setw(8) << result.output.left
-              << " | " << std::setw(9) << result.output.right;
 
-    if (zs_controller) {
-        const auto print_zs_output = [&config, &result](double command, bool left) {
-            const bool direction_inverted =
-                left ? config.zs_left_direction_inverted : config.zs_right_direction_inverted;
+    std::cout << std::left << std::setw(14) << "RC / drive" << std::setw(10) << "Value"
+              << std::setw(20) << (zs_controller ? "ZS parameter" : "Drive output")
+              << "Value" << (interactive ? "\033[K" : "") << '\n';
+    for (std::size_t channel = 0; channel < 18; ++channel) {
+        std::string label = "CH";
+        if (channel + 1 < 10) {
+            label += '0';
+        }
+        label += std::to_string(channel + 1);
+        std::string value = "--";
+        if (raw_frame) {
+            if (channel < raw_frame->channels.size()) {
+                value = std::to_string(raw_frame->channels[channel]);
+            } else if (channel == 16) {
+                value = raw_frame->channel_17 ? "ON" : "OFF";
+            } else {
+                value = raw_frame->channel_18 ? "ON" : "OFF";
+            }
+        }
+
+        std::string parameter;
+        std::string parameter_value;
+        if (zs_controller && channel == 0) {
+            parameter = "ZS LEFT";
+        } else if (zs_controller && channel == 1) {
+            parameter = "PWM (GPIO " + std::to_string(config.zs_left_speed_gpio) + ")";
             const int duty = result.motor_enabled
-                ? static_cast<int>(std::lround(std::abs(command) * config.zs_max_pwm))
+                ? static_cast<int>(std::lround(std::abs(result.output.left) * config.zs_max_pwm))
                 : 0;
-            const int direction = (command >= 0.0) != direction_inverted ? 1 : 0;
-
-            std::cout << " | " << std::setw(3) << duty << '/' << config.zs_max_pwm
-                      << " | " << (result.motor_enabled ? std::to_string(direction) : "--")
-                      << " | " << (result.motor_enabled ? "1" : "0");
-        };
-        print_zs_output(result.output.left, true);
-        print_zs_output(result.output.right, false);
+            parameter_value = std::to_string(duty) + '/' + std::to_string(config.zs_max_pwm);
+        } else if (zs_controller && channel == 2) {
+            parameter = "DIR (GPIO " + std::to_string(config.zs_left_direction_gpio) + ")";
+            const int direction =
+                (result.output.left >= 0.0) != config.zs_left_direction_inverted ? 1 : 0;
+            parameter_value = result.motor_enabled ? std::to_string(direction) : "--";
+        } else if (zs_controller && channel == 3) {
+            parameter = "STOPn (GPIO " + std::to_string(config.zs_left_stop_gpio) + ")";
+            parameter_value = result.motor_enabled ? "1" : "0";
+        } else if (zs_controller && channel == 4) {
+            parameter = "ZS RIGHT";
+        } else if (zs_controller && channel == 5) {
+            parameter = "PWM (GPIO " + std::to_string(config.zs_right_speed_gpio) + ")";
+            const int duty = result.motor_enabled
+                ? static_cast<int>(std::lround(std::abs(result.output.right) * config.zs_max_pwm))
+                : 0;
+            parameter_value = std::to_string(duty) + '/' + std::to_string(config.zs_max_pwm);
+        } else if (zs_controller && channel == 6) {
+            parameter = "DIR (GPIO " + std::to_string(config.zs_right_direction_gpio) + ")";
+            const int direction =
+                (result.output.right >= 0.0) != config.zs_right_direction_inverted ? 1 : 0;
+            parameter_value = result.motor_enabled ? std::to_string(direction) : "--";
+        } else if (zs_controller && channel == 7) {
+            parameter = "STOPn (GPIO " + std::to_string(config.zs_right_stop_gpio) + ")";
+            parameter_value = result.motor_enabled ? "1" : "0";
+        }
+        print_row(label, value, parameter, parameter_value);
     }
-    std::cout << (interactive ? "\033[K\033[J" : "") << '\n' << std::flush;
+
+    print_row("Throttle norm", std::to_string(rc ? rc->drive.throttle : 0.0));
+    print_row("Steering norm", std::to_string(rc ? rc->drive.steering : 0.0));
+    print_row("Left command", std::to_string(result.output.left));
+    print_row("Right command", std::to_string(result.output.right));
+
+    std::cout << (interactive ? "\033[J" : "") << std::flush;
 }
 
 void run_armed(
@@ -278,7 +300,6 @@ void run_armed(
     } else {
         std::cout << "Waiting for both sticks to remain neutral for "
                   << config.arm_neutral_ms << " ms before arming." << std::endl;
-        print_drive_table_header(config, zs_controller, interactive);
     }
 
     while (!stopping) {
@@ -335,9 +356,8 @@ void run_armed(
         if (now >= next_report) {
             if (interactive) {
                 std::cout << "\033[H";
-                print_drive_table_header(config, zs_controller, interactive);
             }
-            print_drive_table_row(
+            print_drive_table(
                 config,
                 zs_controller,
                 receiver.latest_frame(),
@@ -345,7 +365,7 @@ void run_armed(
                 result,
                 armed,
                 interactive);
-            next_report = now + milliseconds(200);
+            next_report = now + (interactive ? milliseconds(200) : seconds(1));
         }
 
         next_tick += period;
