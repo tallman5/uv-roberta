@@ -3,6 +3,7 @@
 #include <pigpiod_if2.h>
 
 #include <cmath>
+#include <iostream>
 #include <stdexcept>
 
 namespace roberta::control {
@@ -44,13 +45,21 @@ LinuxZsX11Driver::LinuxZsX11Driver(unsigned pigpio_handle, const RcDriveConfig& 
         if (set_mode(pigpio_handle_, static_cast<unsigned>(gpio), PI_OUTPUT) < 0 ||
             !write_level(gpio, 0)) {
             fail_safe_stop();
-            throw std::runtime_error("Unable to assert the active-low ZS controller stop inputs.");
+            const bool released = release_outputs();
+            throw std::runtime_error(
+                released
+                    ? "Unable to assert the active-low ZS controller stop inputs."
+                    : "Unable to assert the active-low ZS controller stop inputs or release its GPIOs.");
         }
     }
     for (const int gpio : output_pins) {
         if (set_mode(pigpio_handle_, static_cast<unsigned>(gpio), PI_OUTPUT) < 0) {
             fail_safe_stop();
-            throw std::runtime_error("Unable to configure ZS controller output GPIO.");
+            const bool released = release_outputs();
+            throw std::runtime_error(
+                released
+                    ? "Unable to configure ZS controller output GPIO."
+                    : "Unable to configure ZS controller output GPIO or release its GPIOs.");
         }
     }
     if (set_PWM_frequency(
@@ -66,12 +75,21 @@ LinuxZsX11Driver::LinuxZsX11Driver(unsigned pigpio_handle, const RcDriveConfig& 
         !write_level(left_direction_gpio_, 0) ||
         !write_level(right_direction_gpio_, 0)) {
         fail_safe_stop();
-        throw std::runtime_error("Unable to initialize ZS controller outputs in the stopped state.");
+        const bool released = release_outputs();
+        throw std::runtime_error(
+            released
+                ? "Unable to initialize ZS controller outputs in the stopped state."
+                : "Unable to initialize ZS controller outputs or release its GPIOs.");
     }
 }
 
 LinuxZsX11Driver::~LinuxZsX11Driver() {
     stop();
+    if (!release_outputs()) {
+        std::cerr << "roberta_rc_drive: Unable to release ZS GPIOs to inputs; "
+                     "the active-low stop outputs may remain asserted."
+                  << std::endl;
+    }
 }
 
 bool LinuxZsX11Driver::healthy() const noexcept {
@@ -87,6 +105,22 @@ bool LinuxZsX11Driver::write_speed(int gpio, int duty) noexcept {
 
 bool LinuxZsX11Driver::write_level(int gpio, int level) noexcept {
     return gpio_write(pigpio_handle_, static_cast<unsigned>(gpio), static_cast<unsigned>(level)) >= 0;
+}
+
+bool LinuxZsX11Driver::release_outputs() noexcept {
+    bool ok = true;
+    const int pins[] = {
+        left_speed_gpio_,
+        left_direction_gpio_,
+        right_speed_gpio_,
+        right_direction_gpio_,
+        left_stop_gpio_,
+        right_stop_gpio_
+    };
+    for (const int gpio : pins) {
+        ok = set_mode(pigpio_handle_, static_cast<unsigned>(gpio), PI_INPUT) >= 0 && ok;
+    }
+    return ok;
 }
 
 void LinuxZsX11Driver::fail_safe_stop() noexcept {

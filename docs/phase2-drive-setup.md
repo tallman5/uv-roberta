@@ -111,7 +111,7 @@ While running in a terminal, `roberta_rc_drive` refreshes a fixed live table in 
 
 Move one stick at a time and confirm each wheel's direction at the low command limit. Check each channel 10 switch position first at neutral, then test throttle, steering, neutral stop, and transmitter-off/failsafe behavior. If the SBUS link is lost or marked failsafe, or channel 10 is invalid, both channels are commanded to zero and the drive disarms. After restoring valid input, return both sticks to neutral and wait for the full arm hold again before any motion is accepted.
 
-Press Ctrl-C to exit; the program sends zero commands and asserts the stop inputs on normal shutdown. If it reports a serial, GPIO, or controller error, use the physical emergency stop and investigate before restarting. The runtime has no dashboard/network control path.
+Press Ctrl-C to exit; the program sends zero commands, then returns the ZS speed, direction, and stop GPIOs to inputs so pigpiod does not leave the active-low stop asserted after the app exits. This releases the ZS boards from software control; keep the physical emergency stop ready and ensure the board's manual speed control is at a safe setting. If it reports a serial, GPIO, or controller error, use the physical emergency stop and investigate before restarting. The runtime has no dashboard/network control path.
 
 ## Test a controller without RC input
 

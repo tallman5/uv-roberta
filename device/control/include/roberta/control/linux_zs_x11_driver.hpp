@@ -20,6 +20,7 @@ public:
 private:
     [[nodiscard]] bool write_speed(int gpio, int duty) noexcept;
     [[nodiscard]] bool write_level(int gpio, int level) noexcept;
+    [[nodiscard]] bool release_outputs() noexcept;
     void fail_safe_stop() noexcept;
 
     unsigned pigpio_handle_{};
