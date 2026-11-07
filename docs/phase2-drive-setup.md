@@ -124,7 +124,7 @@ To isolate the motor controller from the receiver, run the bounded test mode wit
   --test-controller
 ```
 
-This mode does not initialize or read the RC receiver. It requires an interactive terminal and an explicit `TEST` confirmation, then pulses each wheel forward and reverse separately for 500 ms with stop intervals. ZS PWM is capped at 25/255; Roboteq commands are capped at 100 units (or the configured maximum, if lower). Securely raise the wheels, clear people and objects from the wheels, and keep the physical emergency stop within reach before confirming. Ctrl-C interrupts the sequence and the program stops the outputs.
+This mode does not initialize or read the RC receiver. It requires an interactive terminal and an explicit `TEST` confirmation, then pulses each wheel forward and reverse separately for one second with stop intervals. ZS PWM is capped at 51/255 (or the lower configured `zs_max_pwm`); Roboteq commands are capped at 100 units (or the configured maximum, if lower). The completion message only confirms the commands were accepted by the driver; it cannot detect physical wheel movement. Securely raise the wheels, clear people and objects from the wheels, and keep the physical emergency stop within reach before confirming. Ctrl-C interrupts the sequence and the program stops the outputs.
 
 ## Command reference
 

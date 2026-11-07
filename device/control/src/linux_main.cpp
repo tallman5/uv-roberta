@@ -397,17 +397,25 @@ void run_controller_test(
             "--test-controller requires an interactive terminal for its safety confirmation.");
     }
 
-    constexpr int kMaxTestPwm = 25;
+    constexpr int kMaxTestPwm = 51;
     constexpr int kMaxTestRoboteqCommand = 100;
     const double test_level = zs_controller
         ? static_cast<double>(std::min(config.zs_max_pwm, kMaxTestPwm)) / config.zs_max_pwm
         : static_cast<double>(std::min(config.max_motor_command, kMaxTestRoboteqCommand)) /
               config.max_motor_command;
+    const int test_pwm = zs_controller
+        ? std::min(config.zs_max_pwm, kMaxTestPwm)
+        : 0;
+    const int test_command = zs_controller
+        ? 0
+        : static_cast<int>(std::lround(test_level * config.max_motor_command));
 
     std::cout << "CONTROLLER TEST: wheels must be securely raised, people clear, and the "
                  "physical emergency stop within reach.\n"
-              << "Each wheel will pulse forward and reverse separately for 500 ms, "
-              << "capped at " << (zs_controller ? "25/255 PWM" : "100/1000 command")
+              << "Each wheel will pulse forward and reverse separately for 1 second, "
+              << "capped at " << (zs_controller
+                                      ? std::to_string(test_pwm) + "/255 PWM"
+                                      : std::to_string(test_command) + " command units")
               << ". Type TEST to continue: " << std::flush;
     std::string confirmation;
     if (!std::getline(std::cin, confirmation) || confirmation != "TEST") {
@@ -437,7 +445,7 @@ void run_controller_test(
             throw std::runtime_error("Motor controller rejected the " + std::string(step.name) +
                                      " test command.");
         }
-        std::this_thread::sleep_for(500ms);
+        std::this_thread::sleep_for(1s);
         motor.stop();
         if (!motor.healthy()) {
             throw std::runtime_error("Motor controller failed while stopping after the " +
@@ -450,8 +458,10 @@ void run_controller_test(
     if (!motor.healthy()) {
         throw std::runtime_error("Motor controller failed to stop after the controller test.");
     }
-    std::cout << (stopping ? "Controller test interrupted; outputs stopped."
-                           : "Controller test complete; outputs stopped.")
+    std::cout << (stopping
+                      ? "Controller test interrupted; outputs stopped."
+                      : "Controller test commands complete; physical wheel movement is not detected. "
+                        "Outputs stopped.")
               << std::endl;
 }
 
