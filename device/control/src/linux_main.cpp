@@ -436,7 +436,7 @@ void run_controller_test(
     };
     constexpr auto kRampStep = 20ms;
     constexpr unsigned kRampSteps = 50;
-    const auto ramp_output = [&motor](const MotorOutput& target, bool ramp_up) {
+    const auto ramp_output = [&motor, kRampStep](const MotorOutput& target, bool ramp_up) {
         for (unsigned index = 1; index <= kRampSteps; ++index) {
             if (stopping) {
                 return false;
