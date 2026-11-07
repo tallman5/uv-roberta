@@ -37,9 +37,11 @@ void on_signal(int) {
 struct Options {
     std::string config_path{"/etc/uv-roberta/rc-drive.conf"};
     std::string controller{"roboteq"};
+    bool controller_specified{};
     bool arm{};
     bool monitor{};
     bool calibrate{};
+    bool test_controller{};
 };
 
 Options parse_options(int argc, char** argv) {
@@ -52,22 +54,29 @@ Options parse_options(int argc, char** argv) {
             options.monitor = true;
         } else if (argument == "--calibrate") {
             options.calibrate = true;
+        } else if (argument == "--test-controller") {
+            options.test_controller = true;
         } else if (argument == "--config" && index + 1 < argc) {
             options.config_path = argv[++index];
         } else if (argument == "--controller" && index + 1 < argc) {
             options.controller = argv[++index];
+            options.controller_specified = true;
         } else {
             throw std::runtime_error(
                 "Usage: roberta_rc_drive [--config PATH] [--controller roboteq|zs] "
-                "[--monitor | --calibrate | --arm]");
+                "[--monitor | --calibrate | --arm | --test-controller]");
         }
     }
     if (options.controller != "roboteq" && options.controller != "zs") {
         throw std::runtime_error("--controller must be either roboteq or zs.");
     }
     if (static_cast<int>(options.arm) + static_cast<int>(options.monitor) +
-            static_cast<int>(options.calibrate) != 1) {
-        throw std::runtime_error("Select exactly one mode: --monitor, --calibrate, or --arm.");
+            static_cast<int>(options.calibrate) + static_cast<int>(options.test_controller) != 1) {
+        throw std::runtime_error(
+            "Select exactly one mode: --monitor, --calibrate, --arm, or --test-controller.");
+    }
+    if (options.test_controller && !options.controller_specified) {
+        throw std::runtime_error("--test-controller requires an explicit --controller selection.");
     }
     return options;
 }
@@ -376,6 +385,76 @@ void run_armed(
     }
 }
 
+void run_controller_test(
+    const roberta::control::RcDriveConfig& config,
+    roberta::control::MotorDriver& motor,
+    bool zs_controller) {
+    using namespace std::chrono_literals;
+    using namespace roberta::control;
+
+    if (!isatty(STDIN_FILENO) || !isatty(STDOUT_FILENO)) {
+        throw std::runtime_error(
+            "--test-controller requires an interactive terminal for its safety confirmation.");
+    }
+
+    constexpr int kMaxTestPwm = 25;
+    constexpr int kMaxTestRoboteqCommand = 100;
+    const double test_level = zs_controller
+        ? static_cast<double>(std::min(config.zs_max_pwm, kMaxTestPwm)) / config.zs_max_pwm
+        : static_cast<double>(std::min(config.max_motor_command, kMaxTestRoboteqCommand)) /
+              config.max_motor_command;
+
+    std::cout << "CONTROLLER TEST: wheels must be securely raised, people clear, and the "
+                 "physical emergency stop within reach.\n"
+              << "Each wheel will pulse forward and reverse separately for 500 ms, "
+              << "capped at " << (zs_controller ? "25/255 PWM" : "100/1000 command")
+              << ". Type TEST to continue: " << std::flush;
+    std::string confirmation;
+    if (!std::getline(std::cin, confirmation) || confirmation != "TEST") {
+        motor.stop();
+        std::cout << "\nController test cancelled; outputs stopped." << std::endl;
+        return;
+    }
+
+    struct TestStep {
+        const char* name;
+        MotorOutput output;
+    };
+    const TestStep steps[] = {
+        {"left forward", {test_level, 0.0}},
+        {"left reverse", {-test_level, 0.0}},
+        {"right forward", {0.0, test_level}},
+        {"right reverse", {0.0, -test_level}}
+    };
+
+    for (const auto& step : steps) {
+        if (stopping) {
+            break;
+        }
+        std::cout << "Testing " << step.name << "..." << std::endl;
+        if (!motor.healthy() || !motor.apply(step.output)) {
+            motor.stop();
+            throw std::runtime_error("Motor controller rejected the " + std::string(step.name) +
+                                     " test command.");
+        }
+        std::this_thread::sleep_for(500ms);
+        motor.stop();
+        if (!motor.healthy()) {
+            throw std::runtime_error("Motor controller failed while stopping after the " +
+                                     std::string(step.name) + " test.");
+        }
+        std::this_thread::sleep_for(300ms);
+    }
+
+    motor.stop();
+    if (!motor.healthy()) {
+        throw std::runtime_error("Motor controller failed to stop after the controller test.");
+    }
+    std::cout << (stopping ? "Controller test interrupted; outputs stopped."
+                           : "Controller test complete; outputs stopped.")
+              << std::endl;
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -388,30 +467,35 @@ int main(int argc, char** argv) {
         auto config = load_rc_drive_config(options.config_path);
         validate_rc_drive_config(
             config,
-            options.arm && options.controller == "roboteq",
-            options.arm && options.controller == "zs");
+            (options.arm || options.test_controller) && options.controller == "roboteq",
+            (options.arm || options.test_controller) && options.controller == "zs");
 
         std::signal(SIGINT, on_signal);
         std::signal(SIGTERM, on_signal);
 
-        pigpio_handle = pigpio_start(nullptr, nullptr);
-        if (pigpio_handle < 0) {
-            throw std::runtime_error(
-                "Cannot connect to pigpiod. Install/enable pigpio and check local GPIO permissions.");
+        if (options.controller == "zs" || !options.test_controller) {
+            pigpio_handle = pigpio_start(nullptr, nullptr);
+            if (pigpio_handle < 0) {
+                throw std::runtime_error(
+                    "Cannot connect to pigpiod. Install/enable pigpio and check local GPIO permissions.");
+            }
         }
 
-        LinuxSbusReceiver receiver(
-            static_cast<unsigned>(pigpio_handle),
-            config.receiver_gpio,
-            config.mapping,
-            std::chrono::milliseconds(config.receiver_timeout_ms));
+        std::unique_ptr<LinuxSbusReceiver> receiver;
+        if (!options.test_controller) {
+            receiver = std::make_unique<LinuxSbusReceiver>(
+                static_cast<unsigned>(pigpio_handle),
+                config.receiver_gpio,
+                config.mapping,
+                std::chrono::milliseconds(config.receiver_timeout_ms));
+        }
 
         if (options.monitor) {
             std::cout << "Receiver monitor only; motors are not opened or commanded." << std::endl;
-            run_monitor(receiver);
+            run_monitor(*receiver);
         } else if (options.calibrate) {
             std::cout << "Calibration only; motors are not opened or commanded." << std::endl;
-            run_calibration(options.config_path, config, receiver);
+            run_calibration(options.config_path, config, *receiver);
         } else {
             if (options.controller == "roboteq") {
                 motor = std::make_unique<LinuxRoboteqDriver>(
@@ -430,9 +514,13 @@ int main(int argc, char** argv) {
             if (!motor->healthy()) {
                 throw std::runtime_error("Motor controller did not accept the startup stop command.");
             }
-            std::cout << "Starting RC control for " << options.controller
-                      << " only; the other controller is not opened." << std::endl;
-            run_armed(config, receiver, *motor, options.controller == "zs");
+            if (options.test_controller) {
+                run_controller_test(config, *motor, options.controller == "zs");
+            } else {
+                std::cout << "Starting RC control for " << options.controller
+                          << " only; the other controller is not opened." << std::endl;
+                run_armed(config, *receiver, *motor, options.controller == "zs");
+            }
         }
     } catch (const std::exception& error) {
         if (motor) {

@@ -113,6 +113,19 @@ Move one stick at a time and confirm each wheel's direction at the low command l
 
 Press Ctrl-C to exit; the program sends zero commands and asserts the stop inputs on normal shutdown. If it reports a serial, GPIO, or controller error, use the physical emergency stop and investigate before restarting. The runtime has no dashboard/network control path.
 
+## Test a controller without RC input
+
+To isolate the motor controller from the receiver, run the bounded test mode with an explicit controller selection:
+
+```bash
+/usr/local/bin/roberta_rc_drive \
+  --config /etc/uv-roberta/rc-drive.conf \
+  --controller zs \
+  --test-controller
+```
+
+This mode does not initialize or read the RC receiver. It requires an interactive terminal and an explicit `TEST` confirmation, then pulses each wheel forward and reverse separately for 500 ms with stop intervals. ZS PWM is capped at 25/255; Roboteq commands are capped at 100 units (or the configured maximum, if lower). Securely raise the wheels, clear people and objects from the wheels, and keep the physical emergency stop within reach before confirming. Ctrl-C interrupts the sequence and the program stops the outputs.
+
 ## Command reference
 
 ```text
@@ -120,6 +133,7 @@ roberta_rc_drive --config PATH --monitor
 roberta_rc_drive --config PATH --calibrate
 roberta_rc_drive --config PATH --controller roboteq --arm
 roberta_rc_drive --config PATH --controller zs --arm
+roberta_rc_drive --config PATH --controller zs --test-controller
 ```
 
-Exactly one mode is required. `--monitor` and `--calibrate` do not open either motor controller. For backward compatibility, `--arm` without `--controller` selects `roboteq`; specify `--controller zs` for the ZS boards. The Roboteq target requires a configured `roboteq_device`. No systemd unit is installed or started by the setup script; start the executable manually only when ready to test.
+Exactly one mode is required. `--monitor` and `--calibrate` do not open either motor controller. For backward compatibility, `--arm` without `--controller` selects `roboteq`; specify `--controller zs` for the ZS boards. `--test-controller` requires an explicit controller selection. The Roboteq target requires a configured `roboteq_device`. No systemd unit is installed or started by the setup script; start the executable manually only when ready to test.
