@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-labelledby="title description">
+  <title id="title">Raspberry Pi with two ZS-X11-H controllers and two wheel motors</title>
+  <desc id="description">Conceptual wiring diagram showing Raspberry Pi GPIO signals and common ground to left and right ZS-X11-H motor controllers, separate battery power through an emergency stop, and one wheel motor per controller.</desc>
+  <defs>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1769aa"/>
+    </marker>
+    <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#c62828"/>
+    </marker>
+    <marker id="arrow-gray" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#455a64"/>
+    </marker>
+    <style>
+      text { font-family: "Segoe UI", Arial, sans-serif; fill: #17212b; }
+      .title { font-size: 34px; font-weight: 700; }
+      .subtitle { font-size: 19px; fill: #455a64; }
+      .box-title { font-size: 23px; font-weight: 700; }
+      .body { font-size: 18px; }
+      .small { font-size: 15px; }
+      .tiny { font-size: 13px; }
+      .box { fill: #f5f8fa; stroke: #455a64; stroke-width: 3; rx: 14; }
+      .signal { fill: none; stroke: #1769aa; stroke-width: 4; }
+      .power { fill: none; stroke: #c62828; stroke-width: 5; }
+      .ground { fill: none; stroke: #455a64; stroke-width: 4; stroke-dasharray: 10 7; }
+      .motor { fill: none; stroke: #ef6c00; stroke-width: 5; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="1000" fill="#ffffff"/>
+  <text x="60" y="65" class="title">Dual ZS-X11-H wheel-controller wiring</text>
+  <text x="60" y="101" class="subtitle">Raspberry Pi GPIO controls; battery power drives the controllers and motors.</text>
+
+  <rect x="60" y="205" width="390" height="420" class="box"/>
+  <text x="95" y="250" class="box-title">Raspberry Pi</text>
+  <text x="95" y="292" class="body">BCM GPIO outputs (software defaults)</text>
+  <text x="95" y="342" class="body">GPIO 12 / header 32 → Left speed (PWM)</text>
+  <text x="95" y="382" class="body">GPIO 24 / header 18 → Left direction</text>
+  <text x="95" y="422" class="body">GPIO 22 / header 15 → Left stop (active low)</text>
+  <line x1="95" y1="448" x2="415" y2="448" stroke="#cbd5dc" stroke-width="2"/>
+  <text x="95" y="487" class="body">GPIO 13 / header 33 → Right speed (PWM)</text>
+  <text x="95" y="527" class="body">GPIO 23 / header 16 → Right direction</text>
+  <text x="95" y="567" class="body">GPIO 27 / header 13 → Right stop (active low)</text>
+  <text x="95" y="605" class="small">GPIO numbering is BCM; header pins are physical pins.</text>
+
+  <rect x="590" y="180" width="390" height="235" class="box"/>
+  <text x="625" y="225" class="box-title">Left ZS-X11-H</text>
+  <text x="625" y="270" class="body">Control inputs: speed / direction / stop</text>
+  <text x="625" y="310" class="body">Motor output: left wheel</text>
+  <text x="625" y="355" class="body">Power input: battery + / −</text>
+  <text x="625" y="390" class="small">Use board terminal labels; verify board revision.</text>
+
+  <rect x="590" y="500" width="390" height="235" class="box"/>
+  <text x="625" y="545" class="box-title">Right ZS-X11-H</text>
+  <text x="625" y="590" class="body">Control inputs: speed / direction / stop</text>
+  <text x="625" y="630" class="body">Motor output: right wheel</text>
+  <text x="625" y="675" class="body">Power input: battery + / −</text>
+  <text x="625" y="710" class="small">Use board terminal labels; verify board revision.</text>
+
+  <rect x="1190" y="260" width="335" height="140" class="box"/>
+  <text x="1225" y="305" class="box-title">Left wheel motor</text>
+  <text x="1225" y="345" class="body">Connect to left controller</text>
+  <text x="1225" y="375" class="small">Verify polarity / rotation raised</text>
+  <circle cx="1490" cy="330" r="37" fill="#fff3e0" stroke="#ef6c00" stroke-width="4"/>
+  <text x="1474" y="338" class="box-title" fill="#ef6c00">M</text>
+
+  <rect x="1190" y="555" width="335" height="140" class="box"/>
+  <text x="1225" y="600" class="box-title">Right wheel motor</text>
+  <text x="1225" y="640" class="body">Connect to right controller</text>
+  <text x="1225" y="670" class="small">Verify polarity / rotation raised</text>
+  <circle cx="1490" cy="625" r="37" fill="#fff3e0" stroke="#ef6c00" stroke-width="4"/>
+  <text x="1474" y="633" class="box-title" fill="#ef6c00">M</text>
+
+  <rect x="580" y="810" width="255" height="95" fill="#fff8e1" stroke="#b28704" stroke-width="3" rx="12"/>
+  <text x="610" y="850" class="box-title">Motor battery</text>
+  <text x="610" y="880" class="small">Voltage per controller specs</text>
+  <rect x="910" y="810" width="245" height="95" fill="#ffebee" stroke="#c62828" stroke-width="3" rx="12"/>
+  <text x="940" y="850" class="box-title">Physical E-stop</text>
+  <text x="940" y="880" class="small">Interrupt motor power</text>
+
+  <path d="M450 330 H540 V270 H590" class="signal" marker-end="url(#arrow-blue)"/>
+  <path d="M450 370 H525 V300 H590" class="signal" marker-end="url(#arrow-blue)"/>
+  <path d="M450 410 H510 V330 H590" class="signal" marker-end="url(#arrow-blue)"/>
+  <path d="M450 475 H535 V590 H590" class="signal" marker-end="url(#arrow-blue)"/>
+  <path d="M450 515 H520 V620 H590" class="signal" marker-end="url(#arrow-blue)"/>
+  <path d="M450 555 H505 V650 H590" class="signal" marker-end="url(#arrow-blue)"/>
+
+  <path d="M980 300 H1190" class="motor" marker-end="url(#arrow-gray)"/>
+  <path d="M980 620 H1190" class="motor" marker-end="url(#arrow-gray)"/>
+  <path d="M835 858 H910" class="power" marker-end="url(#arrow-red)"/>
+  <path d="M1155 858 H1175 V155 H790 V180" class="power" marker-end="url(#arrow-red)"/>
+  <path d="M1175 858 V475 H790 V500" class="power" marker-end="url(#arrow-red)"/>
+
+  <path d="M450 600 H500 V445 H560 V395 H590" class="ground"/>
+  <path d="M560 445 V690 H590" class="ground"/>
+  <path d="M560 445 V790 H545 V860 H580" class="ground"/>
+
+  <text x="475" y="235" class="small" fill="#1769aa">Three separate GPIO signals per board</text>
+  <text x="1015" y="145" class="small" fill="#c62828">Battery + routed through E-stop to both controller power inputs</text>
+  <text x="1005" y="445" class="small" fill="#455a64">Battery − / Pi ground / controller signal grounds share reference</text>
+
+  <rect x="60" y="765" width="455" height="160" fill="#fff3e0" stroke="#ef6c00" stroke-width="3" rx="12"/>
+  <text x="88" y="805" class="box-title">Important</text>
+  <text x="88" y="840" class="small">• Do not power motors from the Pi.</text>
+  <text x="88" y="867" class="small">• Do not connect a controller 5 V output to Pi GPIO.</text>
+  <text x="88" y="894" class="small">• Verify 3.3 V GPIO compatibility and all wiring first.</text>
+  <text x="88" y="917" class="tiny">Conceptual diagram only; exact terminals depend on board revision.</text>
+
+  <rect x="1225" y="810" width="300" height="95" fill="#e3f2fd" stroke="#1769aa" stroke-width="2" rx="12"/>
+  <text x="1250" y="848" class="small" font-weight="700">Signal key</text>
+  <line x1="1250" y1="870" x2="1300" y2="870" class="signal"/>
+  <text x="1310" y="876" class="small">GPIO control</text>
+  <line x1="1250" y1="892" x2="1300" y2="892" class="ground"/>
+  <text x="1310" y="898" class="small">Common ground</text>
+</svg>

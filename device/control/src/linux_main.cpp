@@ -4,6 +4,7 @@
 #include "roberta/control/linux_sbus_receiver.hpp"
 #include "roberta/control/linux_zs_x11_driver.hpp"
 #include "roberta/control/rc_config.hpp"
+#include "roberta/control/sbus.hpp"
 
 #include <pigpiod_if2.h>
 
@@ -14,6 +15,7 @@
 #include <cmath>
 #include <csignal>
 #include <exception>
+#include <iomanip>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -176,10 +178,78 @@ void run_monitor(roberta::control::LinuxSbusReceiver& receiver) {
     }
 }
 
+void print_drive_table_header(
+    const roberta::control::RcDriveConfig& config,
+    bool zs_controller) {
+    std::cout << "State      | RC CH" << config.mapping.throttle_channel + 1
+              << " raw | RC CH" << config.mapping.steering_channel + 1
+              << " raw | RC CH10 | Throttle | Steering | Left cmd | Right cmd";
+    if (zs_controller) {
+        std::cout << " | L PWM (GPIO" << config.zs_left_speed_gpio << ")"
+                  << " | L DIR (GPIO" << config.zs_left_direction_gpio << ")"
+                  << " | L STOPn (GPIO" << config.zs_left_stop_gpio << ")"
+                  << " | R PWM (GPIO" << config.zs_right_speed_gpio << ")"
+                  << " | R DIR (GPIO" << config.zs_right_direction_gpio << ")"
+                  << " | R STOPn (GPIO" << config.zs_right_stop_gpio << ')';
+    }
+    std::cout << '\n';
+}
+
+void print_drive_table_row(
+    const roberta::control::RcDriveConfig& config,
+    bool zs_controller,
+    const std::optional<roberta::control::SbusFrame>& raw_frame,
+    const std::optional<roberta::control::RcFrame>& rc,
+    const roberta::control::ControlResult& result,
+    bool armed) {
+    using namespace roberta::control;
+
+    const char* state = result.fault != ControlFault::None
+        ? "FAULT"
+        : !rc ? "NO RC" : armed ? "ARMED" : "ARMING";
+    std::cout << std::left << std::setw(10) << state << " | " << std::right;
+    const auto print_channel = [&raw_frame](unsigned channel) {
+        if (raw_frame) {
+            std::cout << std::setw(7) << raw_frame->channels[channel];
+        } else {
+            std::cout << std::setw(7) << "--";
+        }
+    };
+    print_channel(config.mapping.throttle_channel);
+    std::cout << " | ";
+    print_channel(config.mapping.steering_channel);
+    std::cout << " | ";
+    print_channel(9);
+    std::cout << std::fixed << std::setprecision(2)
+              << " | " << std::setw(8) << (rc ? rc->drive.throttle : 0.0)
+              << " | " << std::setw(8) << (rc ? rc->drive.steering : 0.0)
+              << " | " << std::setw(8) << result.output.left
+              << " | " << std::setw(9) << result.output.right;
+
+    if (zs_controller) {
+        const auto print_zs_output = [&config, &result](double command, bool left) {
+            const bool direction_inverted =
+                left ? config.zs_left_direction_inverted : config.zs_right_direction_inverted;
+            const int duty = result.motor_enabled
+                ? static_cast<int>(std::lround(std::abs(command) * config.zs_max_pwm))
+                : 0;
+            const int direction = (command >= 0.0) != direction_inverted ? 1 : 0;
+
+            std::cout << " | " << std::setw(3) << duty << '/' << config.zs_max_pwm
+                      << " | " << (result.motor_enabled ? std::to_string(direction) : "--")
+                      << " | " << (result.motor_enabled ? "1" : "0");
+        };
+        print_zs_output(result.output.left, true);
+        print_zs_output(result.output.right, false);
+    }
+    std::cout << '\n' << std::flush;
+}
+
 void run_armed(
     const roberta::control::RcDriveConfig& config,
     roberta::control::LinuxSbusReceiver& receiver,
-    roberta::control::MotorDriver& motor) {
+    roberta::control::MotorDriver& motor,
+    bool zs_controller) {
     using namespace std::chrono;
     using namespace roberta::control;
 
@@ -196,12 +266,17 @@ void run_armed(
     std::optional<bool> last_receiver_valid;
     bool armed = false;
     std::optional<ControlFault> last_fault;
+    auto next_report = next_tick;
     std::cout << "Waiting for both sticks to remain neutral for "
               << config.arm_neutral_ms << " ms before arming." << std::endl;
+    std::cout << "Live RC and motor output values (ZS PWM shown as duty/max; STOPn=1 means enabled):"
+              << std::endl;
+    print_drive_table_header(config, zs_controller);
 
     while (!stopping) {
         const auto now = steady_clock::now();
         const auto frame = receiver.read(now);
+        ControlResult result{};
         const bool receiver_valid = frame.has_value();
         if (last_receiver_valid && *last_receiver_valid != receiver_valid) {
             if (receiver_valid) {
@@ -234,7 +309,7 @@ void run_armed(
                 throw std::runtime_error("Motor controller did not accept the startup stop command.");
             }
         } else {
-            const auto result = control_loop.tick(now, std::nullopt);
+            result = control_loop.tick(now, std::nullopt);
             if (result.fault != last_fault) {
                 if (result.fault == ControlFault::MotorUnavailable) {
                     std::cerr << "Motor controller unavailable; output stopped." << std::endl;
@@ -247,6 +322,17 @@ void run_armed(
             if (!motor.healthy()) {
                 throw std::runtime_error("Motor controller output failed. Motor output was stopped.");
             }
+        }
+
+        if (now >= next_report) {
+            print_drive_table_row(
+                config,
+                zs_controller,
+                receiver.latest_frame(),
+                frame,
+                result,
+                armed);
+            next_report = now + milliseconds(200);
         }
 
         next_tick += period;
@@ -313,7 +399,7 @@ int main(int argc, char** argv) {
             }
             std::cout << "Starting RC control for " << options.controller
                       << " only; the other controller is not opened." << std::endl;
-            run_armed(config, receiver, *motor);
+            run_armed(config, receiver, *motor, options.controller == "zs");
         }
     } catch (const std::exception& error) {
         if (motor) {

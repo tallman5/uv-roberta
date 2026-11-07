@@ -45,6 +45,8 @@ The ZS defaults are BCM GPIO 12/24/22 for left speed/direction/stop and 13/23/27
 
 The following are software defaults, not confirmation of the installed harness. BCM numbers differ from physical header pin numbers:
 
+![Raspberry Pi to dual ZS-X11-H controller wiring diagram](../images/phase2-zs-dual-controller-wiring.svg)
+
 | Function | BCM GPIO | Pi physical header pin |
 | --- | ---: | ---: |
 | SBUS receiver input | 17 | 11 |
@@ -104,6 +106,8 @@ For the model with the two ZS-X11-H boards, use instead:
 ```
 
 The program opens only the selected controller, commands a stop, and waits for valid SBUS frames with both sticks neutral continuously for `arm_neutral_ms` (2 seconds by default). Once armed, throttle controls forward/reverse and steering mixes left and right outputs. Channel 10 selects the active motor-command cap: low = 33%, medium = 66%, high = 100% of the configured cap. `deadband` suppresses small stick movement around center; per-axis inversion and per-motor inversion are independently configurable.
+
+While running, `roberta_rc_drive` prints a live table of the raw SBUS throttle, steering, and channel 10 values alongside normalized RC inputs and left/right motor commands. For the ZS controller it also shows the calculated PWM duty and configured direction/stop GPIO levels, so neutral, low-limit, invalid-channel, and stopped states can be distinguished.
 
 Move one stick at a time and confirm each wheel's direction at the low command limit. Check each channel 10 switch position first at neutral, then test throttle, steering, neutral stop, and transmitter-off/failsafe behavior. If the SBUS link is lost or marked failsafe, or channel 10 is invalid, both channels are commanded to zero and the drive disarms. After restoring valid input, return both sticks to neutral and wait for the full arm hold again before any motion is accepted.
 

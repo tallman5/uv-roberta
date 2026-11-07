@@ -56,10 +56,6 @@ void LinuxSbusReceiver::on_edge(int level, std::uint32_t tick) noexcept {
     if (frame) {
         std::lock_guard lock(mutex_);
         received_at_ = std::chrono::steady_clock::now();
-        if (frame->frame_lost || frame->failsafe || !valid_sbus_drive_channels(*frame, mapping_)) {
-            latest_frame_.reset();
-            return;
-        }
         latest_frame_ = frame;
     }
 }
@@ -72,7 +68,8 @@ std::optional<SbusFrame> LinuxSbusReceiver::latest_frame() const {
 std::optional<RcFrame> LinuxSbusReceiver::read(MonotonicTime now) noexcept {
     std::lock_guard lock(mutex_);
     if (!latest_frame_ || received_at_ > now ||
-        now - received_at_ > timeout_) {
+        now - received_at_ > timeout_ || latest_frame_->frame_lost ||
+        latest_frame_->failsafe || !valid_sbus_drive_channels(*latest_frame_, mapping_)) {
         return std::nullopt;
     }
 
