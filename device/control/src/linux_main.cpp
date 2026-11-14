@@ -42,6 +42,7 @@ struct Options {
     bool monitor{};
     bool calibrate{};
     bool test_controller{};
+    bool test_pins{};
     std::string test_channel{"left"};
     bool test_channel_specified{};
 };
@@ -58,6 +59,8 @@ Options parse_options(int argc, char** argv) {
             options.calibrate = true;
         } else if (argument == "--test-controller") {
             options.test_controller = true;
+        } else if (argument == "--test-pins") {
+            options.test_pins = true;
         } else if (argument == "--test-channel" && index + 1 < argc) {
             options.test_channel = argv[++index];
             options.test_channel_specified = true;
@@ -69,25 +72,30 @@ Options parse_options(int argc, char** argv) {
         } else {
             throw std::runtime_error(
                 "Usage: roberta_rc_drive [--config PATH] [--controller roboteq|zs] "
-                "[--monitor | --calibrate | --arm | --test-controller [--test-channel left|right]]");
+                "[--monitor | --calibrate | --arm | --test-controller [--test-channel left|right] | "
+                "--test-pins [--test-channel left|right]]");
         }
     }
     if (options.controller != "roboteq" && options.controller != "zs") {
         throw std::runtime_error("--controller must be either roboteq or zs.");
     }
     if (static_cast<int>(options.arm) + static_cast<int>(options.monitor) +
-            static_cast<int>(options.calibrate) + static_cast<int>(options.test_controller) != 1) {
+            static_cast<int>(options.calibrate) + static_cast<int>(options.test_controller) +
+            static_cast<int>(options.test_pins) != 1) {
         throw std::runtime_error(
-            "Select exactly one mode: --monitor, --calibrate, --arm, or --test-controller.");
+            "Select exactly one mode: --monitor, --calibrate, --arm, --test-controller, or --test-pins.");
     }
     if (options.test_controller && !options.controller_specified) {
         throw std::runtime_error("--test-controller requires an explicit --controller selection.");
     }
+    if (options.test_pins && (!options.controller_specified || options.controller != "zs")) {
+        throw std::runtime_error("--test-pins requires an explicit --controller zs selection.");
+    }
     if (options.test_channel != "left" && options.test_channel != "right") {
         throw std::runtime_error("--test-channel must be either left or right.");
     }
-    if (!options.test_controller && options.test_channel_specified) {
-        throw std::runtime_error("--test-channel can only be used with --test-controller.");
+    if (!options.test_controller && !options.test_pins && options.test_channel_specified) {
+        throw std::runtime_error("--test-channel can only be used with --test-controller or --test-pins.");
     }
     return options;
 }
@@ -484,6 +492,101 @@ void run_controller_test(
               << std::endl;
 }
 
+void run_pwm_pin_test(
+    const roberta::control::RcDriveConfig& config,
+    unsigned pigpio_handle,
+    const std::string& test_channel) {
+    using namespace std::chrono_literals;
+    using namespace roberta::control;
+
+    if (!isatty(STDIN_FILENO) || !isatty(STDOUT_FILENO)) {
+        throw std::runtime_error("--test-pins requires an interactive terminal.");
+    }
+
+    const int pin = test_channel == "left"
+        ? config.zs_left_speed_gpio
+        : config.zs_right_speed_gpio;
+    const int maximum_duty = std::min(config.zs_max_pwm, 51);
+    const std::array<int, 4> duty_steps{
+        0,
+        maximum_duty / 3,
+        (2 * maximum_duty) / 3,
+        maximum_duty
+    };
+
+    std::cout << "GPIO-only PWM test: controller signal harnesses must be disconnected and motor "
+                 "power isolated.\n"
+              << "Only BCM GPIO " << pin << " will be driven; DIR and STOP pins are not touched. "
+              << "It will step through PWM levels for 5 seconds each. Type PINS to continue: "
+              << std::flush;
+    std::string confirmation;
+    if (!std::getline(std::cin, confirmation) || confirmation != "PINS") {
+        std::cout << "\nPin test cancelled; no GPIO output was changed." << std::endl;
+        return;
+    }
+
+    if (set_mode(
+            pigpio_handle,
+            static_cast<unsigned>(pin),
+            PI_OUTPUT) < 0) {
+        throw std::runtime_error("Unable to configure the selected PWM GPIO as an output.");
+    }
+    const auto release_pin = [&] {
+        const bool pwm_stopped =
+            set_PWM_dutycycle(pigpio_handle, static_cast<unsigned>(pin), 0) >= 0;
+        const bool input_mode =
+            set_mode(pigpio_handle, static_cast<unsigned>(pin), PI_INPUT) >= 0;
+        return pwm_stopped && input_mode;
+    };
+    const int actual_frequency = set_PWM_frequency(
+        pigpio_handle,
+        static_cast<unsigned>(pin),
+        static_cast<unsigned>(config.zs_pwm_frequency_hz));
+    if (actual_frequency < 0) {
+        const bool released = release_pin();
+        throw std::runtime_error(
+            released
+                ? "Unable to configure PWM frequency on the selected GPIO."
+                : "Unable to configure PWM frequency or restore the selected GPIO to input.");
+    }
+    if (set_PWM_dutycycle(pigpio_handle, static_cast<unsigned>(pin), 0) < 0) {
+        const bool released = release_pin();
+        throw std::runtime_error(
+            released
+                ? "Unable to initialize the selected GPIO PWM output at zero duty."
+                : "Unable to initialize PWM or restore the selected GPIO to input.");
+    }
+
+    for (const int duty : duty_steps) {
+        if (stopping) {
+            break;
+        }
+        if (set_PWM_dutycycle(
+                pigpio_handle,
+                static_cast<unsigned>(pin),
+                static_cast<unsigned>(duty)) < 0) {
+            const bool released = release_pin();
+            throw std::runtime_error(
+                released
+                    ? "Unable to set PWM duty on the selected GPIO."
+                    : "Unable to set PWM duty or restore the selected GPIO to input.");
+        }
+        std::cout << "GPIO " << pin << ": " << duty << "/255 duty at "
+                  << actual_frequency << " Hz for 5 seconds." << std::endl;
+        const auto deadline = std::chrono::steady_clock::now() + 5s;
+        while (!stopping && std::chrono::steady_clock::now() < deadline) {
+            std::this_thread::sleep_for(20ms);
+        }
+    }
+
+    if (!release_pin()) {
+        throw std::runtime_error("Unable to stop PWM or restore the selected GPIO to input.");
+    }
+    std::cout << (stopping ? "Pin test interrupted; PWM stopped and GPIO released."
+                           : "Pin test complete; PWM stopped and GPIO released.")
+              << std::endl;
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -497,7 +600,8 @@ int main(int argc, char** argv) {
         validate_rc_drive_config(
             config,
             (options.arm || options.test_controller) && options.controller == "roboteq",
-            (options.arm || options.test_controller) && options.controller == "zs");
+            (options.arm || options.test_controller || options.test_pins) &&
+                options.controller == "zs");
 
         std::signal(SIGINT, on_signal);
         std::signal(SIGTERM, on_signal);
@@ -511,7 +615,7 @@ int main(int argc, char** argv) {
         }
 
         std::unique_ptr<LinuxSbusReceiver> receiver;
-        if (!options.test_controller) {
+        if (!options.test_controller && !options.test_pins) {
             receiver = std::make_unique<LinuxSbusReceiver>(
                 static_cast<unsigned>(pigpio_handle),
                 config.receiver_gpio,
@@ -519,7 +623,9 @@ int main(int argc, char** argv) {
                 std::chrono::milliseconds(config.receiver_timeout_ms));
         }
 
-        if (options.monitor) {
+        if (options.test_pins) {
+            run_pwm_pin_test(config, static_cast<unsigned>(pigpio_handle), options.test_channel);
+        } else if (options.monitor) {
             std::cout << "Receiver monitor only; motors are not opened or commanded." << std::endl;
             run_monitor(*receiver);
         } else if (options.calibrate) {
