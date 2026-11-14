@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-labelledby="title description">
   <title id="title">Raspberry Pi with two ZS-X11-H controllers and two wheel motors</title>
-  <desc id="description">Conceptual wiring diagram showing Raspberry Pi GPIO signals and common ground to left and right ZS-X11-H motor controllers, separate battery power through an emergency stop, and one wheel motor per controller.</desc>
+  <desc id="description">Conceptual wiring diagram showing Raspberry Pi GPIO signals and a ground wire from physical header pin 30 to the PWM ground terminal on each ZS-X11-H controller, separate battery power through an emergency stop, and one wheel motor per controller.</desc>
   <defs>
     <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
       <path d="M0,0 L10,5 L0,10 z" fill="#1769aa"/>
@@ -31,7 +31,7 @@
   <text x="60" y="65" class="title">Dual ZS-X11-H wheel-controller wiring</text>
   <text x="60" y="101" class="subtitle">Raspberry Pi GPIO controls; battery power drives the controllers and motors.</text>
 
-  <rect x="60" y="205" width="390" height="420" class="box"/>
+  <rect x="60" y="205" width="390" height="460" class="box"/>
   <text x="95" y="250" class="box-title">Raspberry Pi</text>
   <text x="95" y="292" class="body">BCM GPIO outputs (software defaults)</text>
   <text x="95" y="342" class="body">GPIO 12 / header 32 → Left speed (PWM)</text>
@@ -41,21 +41,22 @@
   <text x="95" y="487" class="body">GPIO 13 / header 33 → Right speed (PWM)</text>
   <text x="95" y="527" class="body">GPIO 23 / header 16 → Right direction</text>
   <text x="95" y="567" class="body">GPIO 27 / header 13 → Right stop (active low)</text>
-  <text x="95" y="605" class="small">GPIO numbering is BCM; header pins are physical pins.</text>
+  <text x="95" y="605" class="small">GND / physical pin 30 → PWM-header G on both boards</text>
+  <text x="95" y="635" class="small">GPIO numbers are BCM; header numbers are physical pins.</text>
 
   <rect x="590" y="180" width="390" height="235" class="box"/>
   <text x="625" y="225" class="box-title">Left ZS-X11-H</text>
-  <text x="625" y="270" class="body">Control inputs: speed / direction / stop</text>
+  <text x="625" y="270" class="body">Control inputs: P (PWM) / DIR / STOPn</text>
   <text x="625" y="310" class="body">Motor output: left wheel</text>
-  <text x="625" y="355" class="body">Power input: battery + / −</text>
-  <text x="625" y="390" class="small">Use board terminal labels; verify board revision.</text>
+  <text x="625" y="355" class="body">Power input: battery VCC / GND</text>
+  <text x="625" y="390" class="small">PWM-header G: common ground from Pi pin 30</text>
 
   <rect x="590" y="500" width="390" height="235" class="box"/>
   <text x="625" y="545" class="box-title">Right ZS-X11-H</text>
-  <text x="625" y="590" class="body">Control inputs: speed / direction / stop</text>
+  <text x="625" y="590" class="body">Control inputs: P (PWM) / DIR / STOPn</text>
   <text x="625" y="630" class="body">Motor output: right wheel</text>
-  <text x="625" y="675" class="body">Power input: battery + / −</text>
-  <text x="625" y="710" class="small">Use board terminal labels; verify board revision.</text>
+  <text x="625" y="675" class="body">Power input: battery VCC / GND</text>
+  <text x="625" y="710" class="small">PWM-header G: common ground from Pi pin 30</text>
 
   <rect x="1190" y="260" width="335" height="140" class="box"/>
   <text x="1225" y="305" class="box-title">Left wheel motor</text>
@@ -92,12 +93,16 @@
   <path d="M1175 858 V475 H790 V500" class="power" marker-end="url(#arrow-red)"/>
 
   <path d="M450 600 H500 V445 H560 V395 H590" class="ground"/>
-  <path d="M560 445 V690 H590" class="ground"/>
+  <path d="M560 445 V710 H590" class="ground"/>
   <path d="M560 445 V790 H545 V860 H580" class="ground"/>
+  <circle cx="450" cy="600" r="6" fill="#455a64"/>
+  <circle cx="590" cy="395" r="6" fill="#455a64"/>
+  <circle cx="590" cy="710" r="6" fill="#455a64"/>
+  <circle cx="580" cy="860" r="6" fill="#455a64"/>
 
   <text x="475" y="235" class="small" fill="#1769aa">Three separate GPIO signals per board</text>
   <text x="1015" y="145" class="small" fill="#c62828">Battery + routed through E-stop to both controller power inputs</text>
-  <text x="1005" y="445" class="small" fill="#455a64">Battery − / Pi ground / controller signal grounds share reference</text>
+  <text x="1005" y="445" class="small" fill="#455a64">Pi pin 30, PWM-header G, and battery − share ground reference</text>
 
   <rect x="60" y="765" width="455" height="160" fill="#fff3e0" stroke="#ef6c00" stroke-width="3" rx="12"/>
   <text x="88" y="805" class="box-title">Important</text>
