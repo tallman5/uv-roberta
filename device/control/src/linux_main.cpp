@@ -42,6 +42,8 @@ struct Options {
     bool monitor{};
     bool calibrate{};
     bool test_controller{};
+    std::string test_channel{"left"};
+    bool test_channel_specified{};
 };
 
 Options parse_options(int argc, char** argv) {
@@ -56,6 +58,9 @@ Options parse_options(int argc, char** argv) {
             options.calibrate = true;
         } else if (argument == "--test-controller") {
             options.test_controller = true;
+        } else if (argument == "--test-channel" && index + 1 < argc) {
+            options.test_channel = argv[++index];
+            options.test_channel_specified = true;
         } else if (argument == "--config" && index + 1 < argc) {
             options.config_path = argv[++index];
         } else if (argument == "--controller" && index + 1 < argc) {
@@ -64,7 +69,7 @@ Options parse_options(int argc, char** argv) {
         } else {
             throw std::runtime_error(
                 "Usage: roberta_rc_drive [--config PATH] [--controller roboteq|zs] "
-                "[--monitor | --calibrate | --arm | --test-controller]");
+                "[--monitor | --calibrate | --arm | --test-controller [--test-channel left|right]]");
         }
     }
     if (options.controller != "roboteq" && options.controller != "zs") {
@@ -77,6 +82,12 @@ Options parse_options(int argc, char** argv) {
     }
     if (options.test_controller && !options.controller_specified) {
         throw std::runtime_error("--test-controller requires an explicit --controller selection.");
+    }
+    if (options.test_channel != "left" && options.test_channel != "right") {
+        throw std::runtime_error("--test-channel must be either left or right.");
+    }
+    if (!options.test_controller && options.test_channel_specified) {
+        throw std::runtime_error("--test-channel can only be used with --test-controller.");
     }
     return options;
 }
@@ -388,7 +399,8 @@ void run_armed(
 void run_controller_test(
     const roberta::control::RcDriveConfig& config,
     roberta::control::MotorDriver& motor,
-    bool zs_controller) {
+    bool zs_controller,
+    const std::string& test_channel) {
     using namespace std::chrono_literals;
     using namespace roberta::control;
 
@@ -410,9 +422,9 @@ void run_controller_test(
         ? 0
         : static_cast<int>(std::lround(test_level * config.max_motor_command));
 
-    std::cout << "CONTROLLER TEST: wheels must be securely raised, people clear, and the "
-                 "physical emergency stop within reach.\n"
-              << "Each wheel ramps up for 1 second, holds for 500 ms, then ramps down for 1 second. "
+    std::cout << "CONTROLLER TEST: the selected channel ramps up for 1 second, holds for 3 seconds, "
+                 "then ramps down for 1 second. Wheels must be securely raised, people clear, and "
+                 "the physical emergency stop within reach.\n"
               << "Output is capped at " << (zs_controller
                                       ? std::to_string(test_pwm) + "/255 PWM"
                                       : std::to_string(test_command) + " command units")
@@ -424,16 +436,10 @@ void run_controller_test(
         return;
     }
 
-    struct TestStep {
-        const char* name;
-        MotorOutput output;
-    };
-    const TestStep steps[] = {
-        {"left forward", {test_level, 0.0}},
-        {"left reverse", {-test_level, 0.0}},
-        {"right forward", {0.0, test_level}},
-        {"right reverse", {0.0, -test_level}}
-    };
+    const std::string step_name = test_channel + " channel forward";
+    const MotorOutput test_output = test_channel == "left"
+        ? MotorOutput{test_level, 0.0}
+        : MotorOutput{0.0, test_level};
     constexpr auto kRampStep = 20ms;
     constexpr unsigned kRampSteps = 50;
     const auto ramp_output = [&motor, kRampStep](const MotorOutput& target, bool ramp_up) {
@@ -454,36 +460,23 @@ void run_controller_test(
         return true;
     };
     const auto hold_output = [] {
-        const auto deadline = std::chrono::steady_clock::now() + 500ms;
+        const auto deadline = std::chrono::steady_clock::now() + 3s;
         while (!stopping && std::chrono::steady_clock::now() < deadline) {
             std::this_thread::sleep_for(20ms);
         }
     };
 
-    for (const auto& step : steps) {
-        if (stopping) {
-            break;
-        }
-        std::cout << "Testing " << step.name << "..." << std::endl;
-        if (!ramp_output(step.output, true)) {
-            break;
-        }
+    std::cout << "Testing " << step_name << "..." << std::endl;
+    if (!stopping && ramp_output(test_output, true)) {
         hold_output();
-        if (!ramp_output(step.output, false)) {
-            break;
-        }
-        motor.stop();
-        if (!motor.healthy()) {
-            throw std::runtime_error("Motor controller failed while stopping after the " +
-                                     std::string(step.name) + " test.");
-        }
-        std::this_thread::sleep_for(300ms);
+        ramp_output(test_output, false);
     }
-
     motor.stop();
     if (!motor.healthy()) {
-        throw std::runtime_error("Motor controller failed to stop after the controller test.");
+        throw std::runtime_error("Motor controller failed while stopping after the " +
+                                 step_name + " test.");
     }
+
     std::cout << (stopping
                       ? "Controller test interrupted; outputs stopped."
                       : "Controller test commands complete; physical wheel movement is not detected. "
@@ -551,7 +544,7 @@ int main(int argc, char** argv) {
                 throw std::runtime_error("Motor controller did not accept the startup stop command.");
             }
             if (options.test_controller) {
-                run_controller_test(config, *motor, options.controller == "zs");
+                run_controller_test(config, *motor, options.controller == "zs", options.test_channel);
             } else {
                 std::cout << "Starting RC control for " << options.controller
                           << " only; the other controller is not opened." << std::endl;

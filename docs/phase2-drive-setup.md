@@ -19,6 +19,8 @@ Start the executable manually with exactly one `--controller` target. It opens a
 
 The program can command motor torque. A raised frame reduces the risk of unintended vehicle motion but does not eliminate pinch, entanglement, or electrical hazards.
 
+The `images/zs-x11h-wiring.jpg` reference labels `P` as the external PWM signal input and `G` as its ground. For external PWM, it says the selection link is normally disconnected and should be short-circuited, and that the on-board speed potentiometer should be turned fully down to minimum. The board labels DIR and STOP as active-low and specifies 2.5–5 V PWM at 50 Hz–20 kHz. The Pi's 3.3 V output and configured 800 Hz are within those stated ranges. Confirm the pictured link and terminal locations on the actual board revision before changing wiring.
+
 ## Install/build on Raspberry Pi OS
 
 Follow the hardware checks and run the installer described in [the Phase 1 setup guide](phase1-setup.md). The installer builds and installs both `/usr/local/bin/roberta_rc_monitor` and `/usr/local/bin/roberta_rc_drive`, and places an example configuration at `/etc/uv-roberta/rc-drive.conf` only if one does not already exist. It does not create, enable, or start a service.
@@ -121,10 +123,11 @@ To isolate the motor controller from the receiver, run the bounded test mode wit
 /usr/local/bin/roberta_rc_drive \
   --config /etc/uv-roberta/rc-drive.conf \
   --controller zs \
-  --test-controller
+  --test-controller \
+  --test-channel left
 ```
 
-This mode does not initialize or read the RC receiver. It requires an interactive terminal and an explicit `TEST` confirmation, then tests each wheel forward and reverse separately. Each command ramps up over one second, holds for 500 ms, and ramps down over one second, with stop intervals between directions. ZS PWM is capped at 51/255 (or the lower configured `zs_max_pwm`); Roboteq commands are capped at 100 units (or the configured maximum, if lower). The completion message only confirms the commands were accepted by the driver; it cannot detect physical wheel movement. Securely raise the wheels, clear people and objects from the wheels, and keep the physical emergency stop within reach before confirming. Ctrl-C interrupts the sequence and the program stops the outputs.
+This mode does not initialize or read the RC receiver. It requires an interactive terminal and an explicit `TEST` confirmation, then ramps only the selected channel forward over one second, holds it for three seconds, and ramps it down over one second. `--test-channel` accepts `left` or `right` and defaults to `left`; the unselected channel receives zero speed. ZS PWM is capped at 51/255 (20% duty, or a lower configured `zs_max_pwm`); Roboteq commands are capped at 100 units (or the configured maximum, if lower). For the default ZS settings, measuring the left board's `P` PWM input relative to its `G` ground should show a 0–3.3 V, 800 Hz PWM signal at 20% duty while held. Use the meter's DC-voltage range with its leads in the voltage jacks, not current mode across the signal and ground. A DC-voltage meter that averages PWM will read about 0.66 V; a meter with frequency/duty mode should show about 800 Hz and 20%. Basic meters may not average an 800 Hz signal accurately. The completion message only confirms the commands were accepted by the driver; it cannot detect physical wheel movement. Securely raise the wheels, clear people and objects from the wheels, and keep the physical emergency stop within reach before confirming. Ctrl-C interrupts the sequence and the program stops the outputs.
 
 ## Command reference
 
@@ -133,7 +136,7 @@ roberta_rc_drive --config PATH --monitor
 roberta_rc_drive --config PATH --calibrate
 roberta_rc_drive --config PATH --controller roboteq --arm
 roberta_rc_drive --config PATH --controller zs --arm
-roberta_rc_drive --config PATH --controller zs --test-controller
+roberta_rc_drive --config PATH --controller zs --test-controller [--test-channel left|right]
 ```
 
 Exactly one mode is required. `--monitor` and `--calibrate` do not open either motor controller. For backward compatibility, `--arm` without `--controller` selects `roboteq`; specify `--controller zs` for the ZS boards. `--test-controller` requires an explicit controller selection. The Roboteq target requires a configured `roboteq_device`. No systemd unit is installed or started by the setup script; start the executable manually only when ready to test.
