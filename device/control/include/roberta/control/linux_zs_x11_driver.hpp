@@ -37,7 +37,8 @@ private:
     bool right_forward_{};
     bool left_direction_known_{};
     bool right_direction_known_{};
-    bool enabled_{};
+    bool left_enabled_{};
+    bool right_enabled_{};
     bool faulted_{};
 };
 

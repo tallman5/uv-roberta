@@ -129,7 +129,8 @@ void LinuxZsX11Driver::fail_safe_stop() noexcept {
     ok = write_speed(right_speed_gpio_, 0) && ok;
     ok = write_level(left_stop_gpio_, 0) && ok;
     ok = write_level(right_stop_gpio_, 0) && ok;
-    enabled_ = false;
+    left_enabled_ = false;
+    right_enabled_ = false;
     faulted_ = faulted_ || !ok;
 }
 
@@ -144,6 +145,10 @@ bool LinuxZsX11Driver::apply(const MotorOutput& output) noexcept {
     const bool right_forward = output.right >= 0.0;
     const bool left_direction = left_forward != left_direction_inverted_;
     const bool right_direction = right_forward != right_direction_inverted_;
+    const int left_duty = pwm_duty(output.left, max_pwm_);
+    const int right_duty = pwm_duty(output.right, max_pwm_);
+    const bool left_enabled = left_duty > 0;
+    const bool right_enabled = right_duty > 0;
 
     if (left_direction_known_ && left_forward != left_forward_ &&
         !write_speed(left_speed_gpio_, 0)) {
@@ -159,10 +164,12 @@ bool LinuxZsX11Driver::apply(const MotorOutput& output) noexcept {
     }
     if (!write_level(left_direction_gpio_, left_direction ? 1 : 0) ||
         !write_level(right_direction_gpio_, right_direction ? 1 : 0) ||
-        !write_speed(left_speed_gpio_, pwm_duty(output.left, max_pwm_)) ||
-        !write_speed(right_speed_gpio_, pwm_duty(output.right, max_pwm_)) ||
-        (!enabled_ &&
-         (!write_level(left_stop_gpio_, 1) || !write_level(right_stop_gpio_, 1)))) {
+        !write_speed(left_speed_gpio_, left_duty) ||
+        !write_speed(right_speed_gpio_, right_duty) ||
+        (left_enabled_ != left_enabled &&
+         !write_level(left_stop_gpio_, left_enabled ? 1 : 0)) ||
+        (right_enabled_ != right_enabled &&
+         !write_level(right_stop_gpio_, right_enabled ? 1 : 0))) {
         faulted_ = true;
         stop();
         return false;
@@ -172,7 +179,8 @@ bool LinuxZsX11Driver::apply(const MotorOutput& output) noexcept {
     right_forward_ = right_forward;
     left_direction_known_ = true;
     right_direction_known_ = true;
-    enabled_ = true;
+    left_enabled_ = left_enabled;
+    right_enabled_ = right_enabled;
     return true;
 }
 
@@ -182,7 +190,8 @@ void LinuxZsX11Driver::stop() noexcept {
     ok = write_speed(right_speed_gpio_, 0) && ok;
     ok = write_level(left_stop_gpio_, 0) && ok;
     ok = write_level(right_stop_gpio_, 0) && ok;
-    enabled_ = false;
+    left_enabled_ = false;
+    right_enabled_ = false;
     faulted_ = faulted_ || !ok;
 }
 
