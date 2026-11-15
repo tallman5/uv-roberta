@@ -44,6 +44,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND
   endif()
 
   if(ROBERTA_BUILD_DRIVE_RUNTIME)
+    find_library(PIGPIO_LIBRARY pigpio REQUIRED)
     add_executable(roberta_rc_drive
       src/linux_main.cpp
       src/linux_sbus_receiver.cpp
@@ -51,7 +52,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND
       src/linux_zs_x11_driver.cpp)
     target_include_directories(roberta_rc_drive PRIVATE ${PIGPIO_INCLUDE_DIR})
     target_link_libraries(roberta_rc_drive PRIVATE roberta_control)
-    target_link_libraries(roberta_rc_drive PRIVATE ${PIGPIOD_IF2_LIBRARY} Threads::Threads)
+    target_link_libraries(
+      roberta_rc_drive
+      PRIVATE ${PIGPIOD_IF2_LIBRARY} ${PIGPIO_LIBRARY} Threads::Threads)
     target_compile_features(roberta_rc_drive PRIVATE cxx_std_20)
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
       target_compile_options(roberta_rc_drive PRIVATE -Wall -Wextra -Wpedantic -Werror)

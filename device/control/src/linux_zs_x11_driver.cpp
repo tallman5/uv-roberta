@@ -1,5 +1,6 @@
 #include "roberta/control/linux_zs_x11_driver.hpp"
 
+#include <pigpio.h>
 #include <pigpiod_if2.h>
 
 #include <cmath>
@@ -21,16 +22,26 @@ int pwm_duty(double command, int maximum) noexcept {
 }  // namespace
 
 LinuxZsX11Driver::LinuxZsX11Driver(unsigned pigpio_handle, const RcDriveConfig& config)
-    : pigpio_handle_(pigpio_handle),
-      left_speed_gpio_(config.zs_left_speed_gpio),
-      left_direction_gpio_(config.zs_left_direction_gpio),
-      left_stop_gpio_(config.zs_left_stop_gpio),
-      right_speed_gpio_(config.zs_right_speed_gpio),
-      right_direction_gpio_(config.zs_right_direction_gpio),
-      right_stop_gpio_(config.zs_right_stop_gpio),
-      max_pwm_(config.zs_max_pwm),
-      left_direction_inverted_(config.zs_left_direction_inverted),
-      right_direction_inverted_(config.zs_right_direction_inverted) {
+    : pigpio_handle_(pigpio_handle) {
+    initialize(config);
+}
+
+LinuxZsX11Driver::LinuxZsX11Driver(const RcDriveConfig& config)
+    : direct_pigpio_(true) {
+    initialize(config);
+}
+
+void LinuxZsX11Driver::initialize(const RcDriveConfig& config) {
+    left_speed_gpio_ = config.zs_left_speed_gpio;
+    left_direction_gpio_ = config.zs_left_direction_gpio;
+    left_stop_gpio_ = config.zs_left_stop_gpio;
+    right_speed_gpio_ = config.zs_right_speed_gpio;
+    right_direction_gpio_ = config.zs_right_direction_gpio;
+    right_stop_gpio_ = config.zs_right_stop_gpio;
+    max_pwm_ = config.zs_max_pwm;
+    left_direction_inverted_ = config.zs_left_direction_inverted;
+    right_direction_inverted_ = config.zs_right_direction_inverted;
+
     if (max_pwm_ < 1 || max_pwm_ > 255 ||
         config.zs_pwm_frequency_hz < 50 || config.zs_pwm_frequency_hz > 20000) {
         throw std::invalid_argument("Invalid ZS-X11-H drive configuration.");
@@ -42,7 +53,7 @@ LinuxZsX11Driver::LinuxZsX11Driver(unsigned pigpio_handle, const RcDriveConfig& 
         right_speed_gpio_, right_direction_gpio_
     };
     for (const int gpio : stop_pins) {
-        if (set_mode(pigpio_handle_, static_cast<unsigned>(gpio), PI_OUTPUT) < 0 ||
+        if (!set_gpio_mode(gpio, PI_OUTPUT) ||
             !write_level(gpio, 0)) {
             fail_safe_stop();
             const bool released = release_outputs();
@@ -53,7 +64,7 @@ LinuxZsX11Driver::LinuxZsX11Driver(unsigned pigpio_handle, const RcDriveConfig& 
         }
     }
     for (const int gpio : output_pins) {
-        if (set_mode(pigpio_handle_, static_cast<unsigned>(gpio), PI_OUTPUT) < 0) {
+        if (!set_gpio_mode(gpio, PI_OUTPUT)) {
             fail_safe_stop();
             const bool released = release_outputs();
             throw std::runtime_error(
@@ -62,14 +73,8 @@ LinuxZsX11Driver::LinuxZsX11Driver(unsigned pigpio_handle, const RcDriveConfig& 
                     : "Unable to configure ZS controller output GPIO or release its GPIOs.");
         }
     }
-    if (set_PWM_frequency(
-            pigpio_handle_,
-            static_cast<unsigned>(left_speed_gpio_),
-            config.zs_pwm_frequency_hz) < 0 ||
-        set_PWM_frequency(
-            pigpio_handle_,
-            static_cast<unsigned>(right_speed_gpio_),
-            config.zs_pwm_frequency_hz) < 0 ||
+    if (!set_pwm_frequency(left_speed_gpio_, static_cast<unsigned>(config.zs_pwm_frequency_hz)) ||
+        !set_pwm_frequency(right_speed_gpio_, static_cast<unsigned>(config.zs_pwm_frequency_hz)) ||
         !write_speed(left_speed_gpio_, 0) ||
         !write_speed(right_speed_gpio_, 0) ||
         !write_level(left_direction_gpio_, 0) ||
@@ -96,15 +101,35 @@ bool LinuxZsX11Driver::healthy() const noexcept {
     return !faulted_;
 }
 
+bool LinuxZsX11Driver::set_gpio_mode(int gpio, unsigned mode) noexcept {
+    const int result = direct_pigpio_
+        ? gpioSetMode(static_cast<unsigned>(gpio), mode)
+        : set_mode(pigpio_handle_, static_cast<unsigned>(gpio), mode);
+    return result >= 0;
+}
+
+bool LinuxZsX11Driver::set_pwm_frequency(int gpio, unsigned frequency) noexcept {
+    const int result = direct_pigpio_
+        ? gpioSetPWMfrequency(static_cast<unsigned>(gpio), frequency)
+        : set_PWM_frequency(pigpio_handle_, static_cast<unsigned>(gpio), frequency);
+    return result >= 0;
+}
+
 bool LinuxZsX11Driver::write_speed(int gpio, int duty) noexcept {
-    return set_PWM_dutycycle(
-        pigpio_handle_,
-        static_cast<unsigned>(gpio),
-        static_cast<unsigned>(duty)) >= 0;
+    const int result = direct_pigpio_
+        ? gpioPWM(static_cast<unsigned>(gpio), static_cast<unsigned>(duty))
+        : set_PWM_dutycycle(
+              pigpio_handle_,
+              static_cast<unsigned>(gpio),
+              static_cast<unsigned>(duty));
+    return result >= 0;
 }
 
 bool LinuxZsX11Driver::write_level(int gpio, int level) noexcept {
-    return gpio_write(pigpio_handle_, static_cast<unsigned>(gpio), static_cast<unsigned>(level)) >= 0;
+    const int result = direct_pigpio_
+        ? gpioWrite(static_cast<unsigned>(gpio), static_cast<unsigned>(level))
+        : gpio_write(pigpio_handle_, static_cast<unsigned>(gpio), static_cast<unsigned>(level));
+    return result >= 0;
 }
 
 bool LinuxZsX11Driver::release_outputs() noexcept {
@@ -118,7 +143,7 @@ bool LinuxZsX11Driver::release_outputs() noexcept {
         right_stop_gpio_
     };
     for (const int gpio : pins) {
-        ok = set_mode(pigpio_handle_, static_cast<unsigned>(gpio), PI_INPUT) >= 0 && ok;
+        ok = set_gpio_mode(gpio, PI_INPUT) && ok;
     }
     return ok;
 }
