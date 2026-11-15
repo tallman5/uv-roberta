@@ -519,7 +519,8 @@ void run_pwm_pin_test(
     std::cout << "GPIO-only PWM test: controller signal harnesses must be disconnected and motor "
                  "power isolated.\n"
               << "Only BCM GPIO " << pin << " will be driven; DIR and STOP pins are not touched. "
-              << "It will step through PWM levels for 5 seconds each. Type PINS to continue: "
+              << "It will first output 50 Hz at the capped duty, then step through PWM levels "
+                 "for 5 seconds each. Type PINS to continue: "
               << std::flush;
     std::string confirmation;
     if (!std::getline(std::cin, confirmation) || confirmation != "PINS") {
@@ -540,6 +541,52 @@ void run_pwm_pin_test(
             set_mode(pigpio_handle, static_cast<unsigned>(pin), PI_INPUT) >= 0;
         return pwm_stopped && input_mode;
     };
+
+    if (set_PWM_dutycycle(pigpio_handle, static_cast<unsigned>(pin), 0) < 0) {
+        const bool released = release_pin();
+        throw std::runtime_error(
+            released
+                ? "Unable to initialize the selected GPIO PWM output at zero duty."
+                : "Unable to initialize PWM or restore the selected GPIO to input.");
+    }
+
+    constexpr unsigned meter_check_frequency_hz = 50;
+    const int meter_check_frequency = set_PWM_frequency(
+        pigpio_handle,
+        static_cast<unsigned>(pin),
+        meter_check_frequency_hz);
+    if (meter_check_frequency < 0) {
+        const bool released = release_pin();
+        throw std::runtime_error(
+            released
+                ? "Unable to configure the 50 Hz meter-check signal."
+                : "Unable to configure the meter-check signal or restore the selected GPIO to input.");
+    }
+    if (set_PWM_dutycycle(
+            pigpio_handle,
+            static_cast<unsigned>(pin),
+            static_cast<unsigned>(maximum_duty)) < 0) {
+        const bool released = release_pin();
+        throw std::runtime_error(
+            released
+                ? "Unable to set PWM duty for the 50 Hz meter check."
+                : "Unable to set meter-check duty or restore the selected GPIO to input.");
+    }
+    std::cout << "Meter check, GPIO " << pin << ": " << maximum_duty << "/255 duty at "
+              << meter_check_frequency << " Hz for 5 seconds (about 20% and 0.66 V DC)."
+              << std::endl;
+    const auto meter_check_deadline = std::chrono::steady_clock::now() + 5s;
+    while (!stopping && std::chrono::steady_clock::now() < meter_check_deadline) {
+        std::this_thread::sleep_for(20ms);
+    }
+    if (stopping) {
+        if (!release_pin()) {
+            throw std::runtime_error("Unable to stop PWM or restore the selected GPIO to input.");
+        }
+        std::cout << "Pin test interrupted; PWM stopped and GPIO released." << std::endl;
+        return;
+    }
+
     const int actual_frequency = set_PWM_frequency(
         pigpio_handle,
         static_cast<unsigned>(pin),
