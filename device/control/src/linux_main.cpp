@@ -36,6 +36,7 @@ void on_signal(int) {
 
 struct Options {
     std::string config_path{"/etc/uv-roberta/rc-drive.conf"};
+    bool config_specified{};
     std::string controller{"roboteq"};
     bool controller_specified{};
     bool arm{};
@@ -66,6 +67,7 @@ Options parse_options(int argc, char** argv) {
             options.test_channel_specified = true;
         } else if (argument == "--config" && index + 1 < argc) {
             options.config_path = argv[++index];
+            options.config_specified = true;
         } else if (argument == "--controller" && index + 1 < argc) {
             options.controller = argv[++index];
             options.controller_specified = true;
@@ -88,8 +90,8 @@ Options parse_options(int argc, char** argv) {
     if (options.test_controller && !options.controller_specified) {
         throw std::runtime_error("--test-controller requires an explicit --controller selection.");
     }
-    if (options.test_pins && (!options.controller_specified || options.controller != "zs")) {
-        throw std::runtime_error("--test-pins requires an explicit --controller zs selection.");
+    if (options.test_pins && options.controller_specified && options.controller != "zs") {
+        throw std::runtime_error("--test-pins only supports --controller zs.");
     }
     if (options.test_channel != "left" && options.test_channel != "right") {
         throw std::runtime_error("--test-channel must be either left or right.");
@@ -596,7 +598,9 @@ int main(int argc, char** argv) {
     int pigpio_handle = -1;
     try {
         const auto options = parse_options(argc, argv);
-        auto config = load_rc_drive_config(options.config_path);
+        auto config = options.test_pins && !options.config_specified
+            ? RcDriveConfig{}
+            : load_rc_drive_config(options.config_path);
         validate_rc_drive_config(
             config,
             (options.arm || options.test_controller) && options.controller == "roboteq",

@@ -120,14 +120,10 @@ Press Ctrl-C to exit; the program sends zero commands, then returns the ZS speed
 For a meter-only check of one Pi PWM output, disconnect the controller signal harnesses and isolate motor power first. Run:
 
 ```bash
-/usr/local/bin/roberta_rc_drive \
-  --config /etc/uv-roberta/rc-drive.conf \
-  --controller zs \
-  --test-pins \
-  --test-channel left
+/usr/local/bin/roberta_rc_drive --test-pins
 ```
 
-This mode requires an interactive terminal and a `PINS` confirmation. It does not initialize the receiver, open a motor driver, or change any DIR/STOP GPIO. It drives only the selected speed pin (GPIO 12 for `left`, GPIO 13 for `right`) through zero, one-third, two-thirds, and the capped maximum, holding each level for five seconds, then stops PWM and releases that pin to input. With the default 51/255 cap, the levels are 0, 17, 34, and 51 counts at 800 Hz. The MM600 should show 0 Hz/0% at zero, then about 800 Hz at 6.7%, 13.3%, and 20%; DC averages are approximately 0, 0.22, 0.44, and 0.66 V, respectively. The program's duty labels are the requested output, not measured feedback.
+This mode uses the compiled-in defaults and does not require a config file or `--controller`: left is BCM GPIO 12, PWM is 800 Hz, and the maximum is 51/255 (20%). Add `--test-channel right` to select BCM GPIO 13. It requires an interactive terminal and a `PINS` confirmation. It does not initialize the receiver, open a motor driver, or change any DIR/STOP GPIO. It drives only the selected speed pin through zero, one-third, two-thirds, and the maximum, holding each level for five seconds, then stops PWM and releases that pin to input. The levels are 0, 17, 34, and 51 counts at 800 Hz. The MM600 should show 0 Hz/0% at zero, then about 800 Hz at 6.7%, 13.3%, and 20%; DC averages are approximately 0, 0.22, 0.44, and 0.66 V, respectively. The program's duty labels are the requested output, not measured feedback. For other modes, `--config` remains the way to select the RC drive config file.
 
 To isolate the motor controller from the receiver, run the bounded test mode with an explicit controller selection:
 
@@ -149,7 +145,7 @@ roberta_rc_drive --config PATH --calibrate
 roberta_rc_drive --config PATH --controller roboteq --arm
 roberta_rc_drive --config PATH --controller zs --arm
 roberta_rc_drive --config PATH --controller zs --test-controller [--test-channel left|right]
-roberta_rc_drive --config PATH --controller zs --test-pins [--test-channel left|right]
+roberta_rc_drive --test-pins [--test-channel left|right]
 ```
 
-Exactly one mode is required. `--monitor` and `--calibrate` do not open either motor controller. For backward compatibility, `--arm` without `--controller` selects `roboteq`; specify `--controller zs` for the ZS boards. `--test-controller` requires an explicit controller selection, while `--test-pins` requires `--controller zs` and does not open either controller. The Roboteq target requires a configured `roboteq_device`. No systemd unit is installed or started by the setup script; start the executable manually only when ready to test.
+Exactly one mode is required. `--monitor` and `--calibrate` do not open either motor controller. For backward compatibility, `--arm` without `--controller` selects `roboteq`; specify `--controller zs` for the ZS boards. `--test-controller` requires an explicit controller selection. `--test-pins` uses compiled-in ZS GPIO defaults and does not open either controller; an optional `--config PATH` overrides those pin-test settings. The Roboteq target requires a configured `roboteq_device`. No systemd unit is installed or started by the setup script; start the executable manually only when ready to test.
