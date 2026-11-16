@@ -646,7 +646,10 @@ int main(int argc, char** argv) {
     int pigpio_handle = -1;
     try {
         const auto options = parse_options(argc, argv);
-        auto config = options.test_pins && !options.config_specified
+        const bool use_default_config =
+            !options.config_specified &&
+            (options.test_pins || (options.test_controller && options.controller == "zs"));
+        auto config = use_default_config
             ? RcDriveConfig{}
             : load_rc_drive_config(options.config_path);
         validate_rc_drive_config(
