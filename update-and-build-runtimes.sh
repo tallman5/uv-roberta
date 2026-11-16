@@ -12,8 +12,11 @@ run_privileged() {
   fi
 }
 
-echo "Updating the repository..."
-git -C "${ROOT_DIR}" pull --ff-only
+echo "Fetching repository updates..."
+git -C "${ROOT_DIR}" fetch
+
+echo "Discarding tracked local changes and syncing to the upstream branch..."
+git -C "${ROOT_DIR}" reset --hard '@{upstream}'
 
 echo "Configuring the Raspberry Pi runtimes..."
 cmake -S "${ROOT_DIR}" -B "${BUILD_DIR}" \

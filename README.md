@@ -27,7 +27,7 @@ ctest --test-dir build -C Release --output-on-failure
 
 On Raspberry Pi OS, follow [the Phase 1 setup guide](docs/phase1-setup.md). The monitor reads the SBUS signal on BCM GPIO 17 by default; select another pin with `--gpio`. The setup script also builds and installs the manual drive executable, but does not start it or install a service. Select hardware explicitly with `roberta_rc_drive --controller roboteq --arm` or `roberta_rc_drive --controller zs --arm`.
 
-After cloning the repository and installing its Pi build dependencies, run `bash update-and-build-runtimes.sh` from the repository root to pull the current branch, rebuild and install both runtimes under `/usr/local/bin`, and ensure `pigpiod` is enabled and running. The script may prompt for `sudo`; it does not install or start a motor-control service. The ZS controller test uses built-in pin/PWM defaults and does not require the drive config file:
+After cloning the repository and installing its Pi build dependencies, run `bash update-and-build-runtimes.sh` from the repository root to fetch the upstream branch, rebuild and install both runtimes under `/usr/local/bin`, and ensure `pigpiod` is enabled and running. The script resets the checkout to its upstream branch, discarding tracked local changes and commits; untracked files are left untouched. It may prompt for `sudo` and does not install or start a motor-control service. The ZS controller test uses built-in pin/PWM defaults and does not require the drive config file:
 
 ```bash
 roberta_rc_drive --controller zs --test-controller --test-channel left
