@@ -21,7 +21,7 @@ The receiver pinout image identifies the XM+ signal, supply, and ground pads. Th
 
 ## Phase 2: manual RC drive
 
-The local `roberta_rc_drive` executable maps calibrated SBUS throttle and steering sticks to either the MDC2250's two motor channels or the pair of ZS-X11-H GPIO interfaces. Select only the controller connected to the current model with `--controller roboteq` or `--controller zs`; the other controller is not opened. The setup script installs the executable and an example config, but does not install or start a service. See [the Phase 2 drive guide](phase2-drive-setup.md) for channel mapping, calibration, manual startup, and commissioning.
+The local `roberta_rc_drive` executable maps calibrated SBUS throttle and steering sticks to either the MDC2250's two motor channels or the pair of ZS-X11-H GPIO interfaces. Select only the controller connected to the current model with `--controller roboteq` or `--controller zs`; the other controller is not opened. The setup script installs the executable and an example config, but does not install or start a motor-control service. See [the Phase 2 drive guide](phase2-drive-setup.md) for channel mapping, calibration, manual startup, and commissioning.
 
 Before motor power is enabled, verify the Roboteq serial settings and motor channel configuration, establish its host-loss watchdog behavior, and verify an independent physical emergency stop. For the ZS boards, verify the legacy GPIO mapping, external PWM input, direction logic, and active-low stop wiring against the actual board and robot. Keep the frame raised and command caps low for initial direction/stop tests. Treat example channel assignments and motor polarity as unverified until measured on this robot.
 
