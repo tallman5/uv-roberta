@@ -8,6 +8,7 @@ The C++ monitor displays all 16 SBUS analog channels, digital channels 17/18, an
 
 - `device/control/`: SBUS decoding, control policy, hardware-free tests, and the Pi monitor and drive executables.
 - `scripts/setup-rpi4.sh`: installs Pi dependencies, both executables, and an example drive configuration.
+- `update-and-build-runtimes.sh`: fast-forward-pulls the current branch and compiles both Pi runtimes.
 - `docs/phase1-setup.md`: receiver wiring, install, and radio-link test procedure.
 - `docs/phase2-drive-setup.md`: Roboteq configuration, stick calibration, and manual drive test procedure.
 - `api/`, `web/`, and `device/agent/`: later-phase work, not used by the local RC drive executable.
@@ -25,3 +26,5 @@ ctest --test-dir build -C Release --output-on-failure
 ```
 
 On Raspberry Pi OS, follow [the Phase 1 setup guide](docs/phase1-setup.md). The monitor reads the SBUS signal on BCM GPIO 17 by default; select another pin with `--gpio`. The setup script also builds and installs the manual drive executable, but does not start it or install a service. Select hardware explicitly with `roberta_rc_drive --controller roboteq --arm` or `roberta_rc_drive --controller zs --arm`.
+
+After cloning the repository and installing its Pi build dependencies, run `bash update-and-build-runtimes.sh` from the repository root to pull the current branch and rebuild both runtimes in `build/pi-runtimes`. This compiles the executables only; it does not install or start them.
