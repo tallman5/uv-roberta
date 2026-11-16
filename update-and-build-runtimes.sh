@@ -36,6 +36,9 @@ run_privileged install -o root -g root -m 0755 \
 run_privileged install -o root -g root -m 0755 \
   "${BUILD_DIR}/device/control/roberta_rc_drive" \
   /usr/local/bin/roberta_rc_drive
+run_privileged chmod +x \
+  /usr/local/bin/roberta_rc_monitor \
+  /usr/local/bin/roberta_rc_drive
 
 echo "Ensuring pigpiod is enabled and running..."
 run_privileged systemctl enable --now pigpiod.service
