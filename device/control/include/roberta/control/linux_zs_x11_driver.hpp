@@ -8,7 +8,6 @@ namespace roberta::control {
 class LinuxZsX11Driver final : public MotorDriver {
 public:
     LinuxZsX11Driver(unsigned pigpio_handle, const RcDriveConfig& config);
-    explicit LinuxZsX11Driver(const RcDriveConfig& config);
     ~LinuxZsX11Driver() override;
 
     LinuxZsX11Driver(const LinuxZsX11Driver&) = delete;
@@ -28,7 +27,6 @@ private:
     void fail_safe_stop() noexcept;
 
     unsigned pigpio_handle_{};
-    bool direct_pigpio_{};
     int left_speed_gpio_{};
     int left_direction_gpio_{};
     int left_stop_gpio_{};

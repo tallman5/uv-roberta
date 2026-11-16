@@ -644,10 +644,8 @@ int main(int argc, char** argv) {
 
     std::unique_ptr<MotorDriver> motor;
     int pigpio_handle = -1;
-    bool direct_pigpio_initialized = false;
     try {
         const auto options = parse_options(argc, argv);
-        const bool direct_zs_test = options.test_controller && options.controller == "zs";
         auto config = options.test_pins && !options.config_specified
             ? RcDriveConfig{}
             : load_rc_drive_config(options.config_path);
@@ -660,19 +658,7 @@ int main(int argc, char** argv) {
         std::signal(SIGINT, on_signal);
         std::signal(SIGTERM, on_signal);
 
-        if (direct_zs_test) {
-            const int daemon_handle = pigpio_start(nullptr, nullptr);
-            if (daemon_handle >= 0) {
-                pigpio_stop(static_cast<unsigned>(daemon_handle));
-                throw std::runtime_error(
-                    "Stop pigpiod before running the direct-pigpio ZS controller test.");
-            }
-            if (gpioInitialise() < 0) {
-                throw std::runtime_error(
-                    "Direct pigpio initialization failed. Run as root and ensure pigpiod is stopped.");
-            }
-            direct_pigpio_initialized = true;
-        } else if (options.controller == "zs" || !options.test_controller) {
+        if (options.controller == "zs" || !options.test_controller) {
             pigpio_handle = pigpio_start(nullptr, nullptr);
             if (pigpio_handle < 0) {
                 throw std::runtime_error(
@@ -708,14 +694,8 @@ int main(int argc, char** argv) {
                     config.left_motor_inverted,
                     config.right_motor_inverted);
             } else {
-                if (direct_zs_test) {
-                    std::cout << "Using direct pigpio gpioPWM for the bounded ZS controller test."
-                              << std::endl;
-                }
-                motor = direct_zs_test
-                    ? std::make_unique<LinuxZsX11Driver>(config)
-                    : std::make_unique<LinuxZsX11Driver>(
-                          static_cast<unsigned>(pigpio_handle), config);
+                motor = std::make_unique<LinuxZsX11Driver>(
+                    static_cast<unsigned>(pigpio_handle), config);
             }
             motor->stop();
             if (!motor->healthy()) {
@@ -734,9 +714,6 @@ int main(int argc, char** argv) {
             motor->stop();
             motor.reset();
         }
-        if (direct_pigpio_initialized) {
-            gpioTerminate();
-        }
         std::cerr << "roberta_rc_drive: " << error.what() << std::endl;
         if (pigpio_handle >= 0) {
             pigpio_stop(static_cast<unsigned>(pigpio_handle));
@@ -747,9 +724,6 @@ int main(int argc, char** argv) {
     if (motor) {
         motor->stop();
         motor.reset();
-    }
-    if (direct_pigpio_initialized) {
-        gpioTerminate();
     }
     if (pigpio_handle >= 0) {
         pigpio_stop(static_cast<unsigned>(pigpio_handle));

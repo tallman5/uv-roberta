@@ -26,11 +26,6 @@ LinuxZsX11Driver::LinuxZsX11Driver(unsigned pigpio_handle, const RcDriveConfig& 
     initialize(config);
 }
 
-LinuxZsX11Driver::LinuxZsX11Driver(const RcDriveConfig& config)
-    : direct_pigpio_(true) {
-    initialize(config);
-}
-
 void LinuxZsX11Driver::initialize(const RcDriveConfig& config) {
     left_speed_gpio_ = config.zs_left_speed_gpio;
     left_direction_gpio_ = config.zs_left_direction_gpio;
@@ -102,33 +97,28 @@ bool LinuxZsX11Driver::healthy() const noexcept {
 }
 
 bool LinuxZsX11Driver::set_gpio_mode(int gpio, unsigned mode) noexcept {
-    const int result = direct_pigpio_
-        ? gpioSetMode(static_cast<unsigned>(gpio), mode)
-        : set_mode(pigpio_handle_, static_cast<unsigned>(gpio), mode);
+    const int result = set_mode(pigpio_handle_, static_cast<unsigned>(gpio), mode);
     return result >= 0;
 }
 
 bool LinuxZsX11Driver::set_pwm_frequency(int gpio, unsigned frequency) noexcept {
-    const int result = direct_pigpio_
-        ? gpioSetPWMfrequency(static_cast<unsigned>(gpio), frequency)
-        : set_PWM_frequency(pigpio_handle_, static_cast<unsigned>(gpio), frequency);
+    const int result = set_PWM_frequency(pigpio_handle_, static_cast<unsigned>(gpio), frequency);
     return result >= 0;
 }
 
 bool LinuxZsX11Driver::write_speed(int gpio, int duty) noexcept {
-    const int result = direct_pigpio_
-        ? gpioPWM(static_cast<unsigned>(gpio), static_cast<unsigned>(duty))
-        : set_PWM_dutycycle(
-              pigpio_handle_,
-              static_cast<unsigned>(gpio),
-              static_cast<unsigned>(duty));
+    const int result = set_PWM_dutycycle(
+        pigpio_handle_,
+        static_cast<unsigned>(gpio),
+        static_cast<unsigned>(duty));
     return result >= 0;
 }
 
 bool LinuxZsX11Driver::write_level(int gpio, int level) noexcept {
-    const int result = direct_pigpio_
-        ? gpioWrite(static_cast<unsigned>(gpio), static_cast<unsigned>(level))
-        : gpio_write(pigpio_handle_, static_cast<unsigned>(gpio), static_cast<unsigned>(level));
+    const int result = gpio_write(
+        pigpio_handle_,
+        static_cast<unsigned>(gpio),
+        static_cast<unsigned>(level));
     return result >= 0;
 }
 
