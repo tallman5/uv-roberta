@@ -433,9 +433,9 @@ void run_controller_test(
         ? 0
         : static_cast<int>(std::lround(test_level * config.max_motor_command));
 
-    std::cout << "CONTROLLER TEST: the selected channel ramps up for 1 second, holds for 3 seconds, "
-                 "then ramps down for 1 second. Wheels must be securely raised, people clear, and "
-                 "the physical emergency stop within reach.\n"
+    std::cout << "CONTROLLER TEST: the selected channel ramps forward for 1 second, ramps down "
+                 "for 1 second, pauses at zero, then ramps in reverse and back down. Wheels must "
+                 "be securely raised, people clear, and the physical emergency stop within reach.\n"
               << "Output is capped at " << (zs_controller
                                       ? std::to_string(test_pwm) + "/255 PWM"
                                       : std::to_string(test_command) + " command units")
@@ -447,11 +447,13 @@ void run_controller_test(
         return;
     }
 
-    const std::string step_name = test_channel + " channel forward";
-    const MotorOutput test_output = test_channel == "left"
+    const std::string channel_name = test_channel + " channel";
+    const MotorOutput forward_output = test_channel == "left"
         ? MotorOutput{test_level, 0.0}
         : MotorOutput{0.0, test_level};
+    const MotorOutput reverse_output{-forward_output.left, -forward_output.right};
     constexpr auto kRampStep = 20ms;
+    constexpr auto kDirectionPause = 500ms;
     constexpr unsigned kRampSteps = 50;
     const auto ramp_output = [&motor, kRampStep](const MotorOutput& target, bool ramp_up) {
         for (unsigned index = 1; index <= kRampSteps; ++index) {
@@ -470,22 +472,31 @@ void run_controller_test(
         }
         return true;
     };
-    const auto hold_output = [] {
-        const auto deadline = std::chrono::steady_clock::now() + 3s;
-        while (!stopping && std::chrono::steady_clock::now() < deadline) {
-            std::this_thread::sleep_for(20ms);
+    const auto run_direction = [&ramp_output](
+                                   const MotorOutput& target,
+                                   const std::string& direction) {
+        std::cout << "Testing " << direction << "..." << std::endl;
+        if (ramp_output(target, true)) {
+            ramp_output(target, false);
         }
     };
 
-    std::cout << "Testing " << step_name << "..." << std::endl;
-    if (!stopping && ramp_output(test_output, true)) {
-        hold_output();
-        ramp_output(test_output, false);
+    run_direction(forward_output, channel_name + " forward");
+    if (!stopping) {
+        motor.stop();
+        if (!motor.healthy()) {
+            throw std::runtime_error(
+                "Motor controller failed while stopping between forward and reverse.");
+        }
+        std::this_thread::sleep_for(kDirectionPause);
+        if (!stopping) {
+            run_direction(reverse_output, channel_name + " reverse");
+        }
     }
     motor.stop();
     if (!motor.healthy()) {
         throw std::runtime_error("Motor controller failed while stopping after the " +
-                                 step_name + " test.");
+                                 channel_name + " test.");
     }
 
     std::cout << (stopping
