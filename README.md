@@ -8,7 +8,7 @@ The C++ monitor displays all 16 SBUS analog channels, digital channels 17/18, an
 
 - `device/control/`: SBUS decoding, control policy, hardware-free tests, and the Pi monitor and drive executables.
 - `scripts/setup-rpi4.sh`: installs Pi dependencies, both executables, and an example drive configuration.
-- `update-and-build-runtimes.sh`: fast-forward-pulls the current branch, builds and installs both Pi runtimes, and ensures `pigpiod` is running.
+- `update-and-build-runtimes.sh`: fast-forward-pulls the current branch, builds and installs both Pi runtimes, creates the example drive config if absent, and ensures `pigpiod` is running.
 - `docs/phase1-setup.md`: receiver wiring, install, and radio-link test procedure.
 - `docs/phase2-drive-setup.md`: Roboteq configuration, stick calibration, and manual drive test procedure.
 - `api/`, `web/`, and `device/agent/`: later-phase work, not used by the local RC drive executable.
@@ -27,7 +27,7 @@ ctest --test-dir build -C Release --output-on-failure
 
 On Raspberry Pi OS, follow [the Phase 1 setup guide](docs/phase1-setup.md). The monitor reads the SBUS signal on BCM GPIO 17 by default; select another pin with `--gpio`. The setup script also builds and installs the manual drive executable, but does not start it or install a service. Select hardware explicitly with `roberta_rc_drive --controller roboteq --arm` or `roberta_rc_drive --controller zs --arm`.
 
-After cloning the repository and installing its Pi build dependencies, run `bash update-and-build-runtimes.sh` from the repository root to fetch the upstream branch, rebuild and install both runtimes under `/usr/local/bin`, and ensure `pigpiod` is enabled and running. The script resets the checkout to its upstream branch, discarding tracked local changes and commits; untracked files are left untouched. It may prompt for `sudo` and does not install or start a motor-control service. The ZS controller test uses built-in pin/PWM defaults and does not require the drive config file:
+After cloning the repository and installing its Pi build dependencies, run `bash update-and-build-runtimes.sh` from the repository root to fetch the upstream branch, rebuild and install both runtimes under `/usr/local/bin`, create `/etc/uv-roberta/rc-drive.conf` from the example if it does not exist, and ensure `pigpiod` is enabled and running. An existing config is preserved. The example must still be reviewed and calibrated before arming. The script resets the checkout to its upstream branch, discarding tracked local changes and commits; untracked files are left untouched. It may prompt for `sudo` and does not install or start a motor-control service. The ZS controller test uses built-in pin/PWM defaults and does not require the drive config file:
 
 ```bash
 roberta_rc_drive --controller zs --test-controller --test-channel left

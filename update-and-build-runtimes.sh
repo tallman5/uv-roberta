@@ -40,6 +40,18 @@ run_privileged chmod +x \
   /usr/local/bin/roberta_rc_monitor \
   /usr/local/bin/roberta_rc_drive
 
+config_dir="/etc/uv-roberta"
+config_file="${config_dir}/rc-drive.conf"
+run_privileged install -d -o root -g root -m 0755 "${config_dir}"
+if [[ ! -e "${config_file}" ]]; then
+  run_privileged install -o root -g root -m 0644 \
+    "${ROOT_DIR}/device/control/config/rc-drive.conf.example" \
+    "${config_file}"
+  echo "Installed an example drive config at ${config_file}; review and calibrate it before arming."
+else
+  echo "Keeping existing drive config at ${config_file}."
+fi
+
 echo "Ensuring pigpiod is enabled and running..."
 run_privileged systemctl enable --now pigpiod.service
 
@@ -47,6 +59,7 @@ echo
 echo "Installed runtimes:"
 echo "  /usr/local/bin/roberta_rc_monitor"
 echo "  /usr/local/bin/roberta_rc_drive"
+echo "  ${config_file}"
 echo
 echo "To test the left ZS channel (uses built-in pin/PWM defaults):"
 echo "  roberta_rc_drive --controller zs --test-controller --test-channel left"

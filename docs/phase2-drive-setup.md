@@ -23,7 +23,7 @@ The ZS-X11-H schematic shows separate DIR, BRAKE, and STOP terminals. The softwa
 
 ## Install/build on Raspberry Pi OS
 
-Follow the hardware checks and run the installer described in [the Phase 1 setup guide](phase1-setup.md). The installer builds and installs both `/usr/local/bin/roberta_rc_monitor` and `/usr/local/bin/roberta_rc_drive`, and places an example configuration at `/etc/uv-roberta/rc-drive.conf` only if one does not already exist. It does not create, enable, or start a service.
+Follow the hardware checks and run the installer described in [the Phase 1 setup guide](phase1-setup.md), or run `update-and-build-runtimes.sh` from the repository root. Both install `/usr/local/bin/roberta_rc_monitor` and `/usr/local/bin/roberta_rc_drive`, and place an example configuration at `/etc/uv-roberta/rc-drive.conf` only if one does not already exist. They do not create, enable, or start a service.
 
 If the SBUS monitor is not already commissioned, first run:
 
