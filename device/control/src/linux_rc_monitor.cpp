@@ -45,30 +45,18 @@ public:
 };
 
 struct Options {
-    unsigned gpio{17};
-    bool gpio_specified{};
     bool telemetry{};
-    std::string config_path{"/etc/uv-roberta/rc-drive.conf"};
 };
 
 Options parse_options(int argc, char** argv) {
     Options options;
     for (int index = 1; index < argc; ++index) {
         const std::string argument = argv[index];
-        if (argument == "--gpio" && index + 1 < argc) {
-            const auto value = std::stoul(argv[++index]);
-            if (value > 27) {
-                throw std::invalid_argument("BCM GPIO must be between 0 and 27.");
-            }
-            options.gpio = static_cast<unsigned>(value);
-            options.gpio_specified = true;
-        } else if (argument == "--telemetry") {
+        if (argument == "--telemetry") {
             options.telemetry = true;
-        } else if (argument == "--config" && index + 1 < argc) {
-            options.config_path = argv[++index];
         } else {
             throw std::invalid_argument(
-                "Usage: roberta_rc_monitor [--gpio BCM_PIN] [--telemetry [--config PATH]]");
+                "Usage: roberta_rc_monitor [--telemetry]");
         }
     }
     return options;
@@ -298,16 +286,11 @@ int main(int argc, char** argv) {
     std::optional<roberta::control::LinuxRoboteqTelemetry> telemetry;
     try {
         const auto options = parse_options(argc, argv);
-        std::optional<roberta::control::RcDriveConfig> config;
+        const roberta::control::RcDriveConfig config;
         if (options.telemetry) {
-            config = roberta::control::load_rc_drive_config(options.config_path);
-            roberta::control::validate_rc_drive_config(*config, true);
-        } else if (options.config_path != "/etc/uv-roberta/rc-drive.conf") {
-            throw std::invalid_argument("--config requires --telemetry.");
+            roberta::control::validate_rc_drive_config(config, true);
         }
-        const auto gpio = options.gpio_specified || !config
-            ? options.gpio
-            : static_cast<unsigned>(config->receiver_gpio);
+        const auto gpio = static_cast<unsigned>(config.receiver_gpio);
         std::signal(SIGINT, on_signal);
         std::signal(SIGTERM, on_signal);
 
@@ -348,8 +331,8 @@ int main(int argc, char** argv) {
 
         TerminalScreen screen;
         if (options.telemetry) {
-            telemetry.emplace(config->roboteq_device, config->roboteq_baud);
-            run_telemetry_monitor(state, receiver_available, *telemetry, *config);
+            telemetry.emplace(config.roboteq_device, config.roboteq_baud);
+            run_telemetry_monitor(state, receiver_available, *telemetry, config);
         } else {
             std::cout << "RC receiver monitor only; this program cannot command motors." << std::endl;
             while (!stopping) {

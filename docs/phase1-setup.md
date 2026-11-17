@@ -26,7 +26,7 @@ The receiver drawing identifies the SBUS, +5V, and GND pads. It does not establi
 4. Connect SBUS signal to BCM GPIO 17 (physical header pin 11), or note the BCM pin you choose. BCM numbering is not physical header pin numbering.
 5. Do not connect the signal until the wiring and voltage are verified. Do not connect the receiver to a Pi GPIO if its output voltage is unknown or above 3.3 V.
 
-The BCM GPIO 17 default is based on prior-version code. Use `--gpio BCM_PIN` if your receiver is wired to another GPIO.
+The BCM GPIO 17 default is based on prior-version code. If your receiver uses another GPIO, change the hard-coded receiver pin in `RcDriveConfig` and rebuild.
 
 ## Install on Raspberry Pi OS
 
@@ -37,7 +37,7 @@ cd uv-roberta-v2
 sudo bash scripts/setup-rpi4.sh
 ```
 
-The installer checks for Raspberry Pi OS and Pi 4 hardware, updates installed OS packages, installs Git and any missing build/pigpio dependencies, ensures `pigpiod` is enabled and running, builds the monitor and manual drive executable, and installs both under `/usr/local/bin`. It creates `/etc/uv-roberta/rc-drive.conf` from the example only if no config exists; this file must be reviewed and configured before drive mode can open the Roboteq. It is safe to rerun: installed dependencies and a running/enabled daemon are detected, existing configuration is kept, and both executables are rebuilt. It does not install, configure, enable, or start a motor-control service. If a system update requires rebooting, the installer reports that at the end.
+The installer checks for Raspberry Pi OS and Pi 4 hardware, updates installed OS packages, installs Git and any missing build/pigpio dependencies, ensures `pigpiod` is enabled and running, builds the monitor and manual drive executable, and installs both under `/usr/local/bin`. Runtime settings are hard-coded in `RcDriveConfig`; change those source values and rebuild to customize them. It is safe to rerun: installed dependencies and a running/enabled daemon are detected, and both executables are rebuilt. It does not install, configure, enable, or start a motor-control service. If a system update requires rebooting, the installer reports that at the end.
 
 If you previously installed an older drive service, stop and disable it before testing in monitor-only mode:
 

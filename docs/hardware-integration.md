@@ -35,4 +35,4 @@ The ADS1115/power-module images describe a separate telemetry circuit; it is not
 
 ## Phase 3: RC and Roboteq telemetry
 
-`roberta_rc_monitor --telemetry --config PATH` displays all SBUS channels and read-only Roboteq measurements, including shared battery voltage and left/right speed, current, power, and temperature. The battery percentage is a configurable voltage estimate, not a fuel gauge. See [the Phase 3 telemetry guide](phase3-telemetry.md) for operation and interpretation.
+`roberta_rc_monitor --telemetry` displays all SBUS channels and read-only Roboteq measurements, including shared battery voltage and left/right speed, current, power, and temperature. The battery percentage is a hard-coded voltage estimate, not a fuel gauge. See [the Phase 3 telemetry guide](phase3-telemetry.md) for operation and interpretation.

@@ -79,29 +79,17 @@ install -o root -g root -m 0755 \
   "${build_dir}/device/control/roberta_rc_drive" \
   /usr/local/bin/roberta_rc_drive
 
-config_dir="/etc/uv-roberta"
-config_file="${config_dir}/rc-drive.conf"
-install -d -o root -g root -m 0755 "${config_dir}"
-if [[ ! -e "${config_file}" ]]; then
-  install -o root -g root -m 0644 \
-    "${ROOT_DIR}/device/control/config/rc-drive.conf.example" \
-    "${config_file}"
-  echo "Installed an example drive config at ${config_file}; it must be reviewed before arming."
-else
-  echo "Keeping existing drive config at ${config_file}."
-fi
-
 echo
 echo "Installed the RC monitor and manual RC drive executable."
 echo
 echo "Next:"
 echo "  1. Confirm receiver signal voltage is safe for the Pi GPIO (3.3 V maximum)."
-echo "  2. Confirm receiver signal wiring on BCM GPIO 17 (or edit receiver_gpio)."
+echo "  2. Confirm receiver signal wiring on BCM GPIO 17."
 echo "  3. Run /usr/local/bin/roberta_rc_monitor and identify your stick channels."
-echo "  4. Follow docs/phase2-drive-setup.md to configure and calibrate before driving."
+echo "  4. Follow docs/phase2-drive-setup.md to review hard-coded settings and calibrate before driving."
 echo "     The drive executable is not installed as or started by a service."
 echo "  5. For read-only RC and Roboteq readings, run:"
-echo "     /usr/local/bin/roberta_rc_monitor --telemetry --config /etc/uv-roberta/rc-drive.conf"
+echo "     /usr/local/bin/roberta_rc_monitor --telemetry"
 if [[ -e /var/run/reboot-required ]]; then
   echo
   echo "A system update requires a reboot. Reboot before running the monitor."

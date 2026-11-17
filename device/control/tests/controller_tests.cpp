@@ -7,8 +7,6 @@
 
 #include <cmath>
 #include <cstdlib>
-#include <filesystem>
-#include <fstream>
 #include <iostream>
 #include <limits>
 #include <optional>
@@ -377,7 +375,7 @@ int main() {
                 "battery percentage was reported without voltage readings");
         });
 
-        run("RC configuration is parsed and validated before arming", [&] {
+        run("hard-coded RC settings are validated before arming", [&] {
             const roberta::control::RcDriveConfig defaults;
             require(
                 defaults.roboteq_device ==
@@ -385,83 +383,24 @@ int main() {
                 "default Roboteq device path was incorrect");
             require(defaults.zs_max_pwm == 255, "default ZS PWM cap was not full scale");
 
-            const auto path = std::filesystem::temp_directory_path() / "roberta-rc-config-test.conf";
-            const auto write_config = [&](const std::string& roboteq_device) {
-                std::ofstream output(path);
-                output << "receiver_gpio=17\n"
-                       << "throttle_channel=2\n"
-                       << "throttle_min=172\n"
-                       << "throttle_center=992\n"
-                       << "throttle_max=1811\n"
-                       << "throttle_inverted=false\n"
-                       << "steering_channel=1\n"
-                       << "steering_min=180\n"
-                       << "steering_center=1000\n"
-                       << "steering_max=1800\n"
-                       << "steering_inverted=true\n"
-                       << "deadband=0.05\n"
-                       << "receiver_timeout_ms=100\n"
-                       << "roboteq_device=" << roboteq_device << '\n'
-                       << "roboteq_baud=9600\n"
-                       << "battery_nominal_volts=24.5\n"
-                       << "max_motor_command=200\n"
-                       << "left_motor_channel=2\n"
-                       << "right_motor_channel=1\n"
-                       << "left_motor_inverted=false\n"
-                       << "right_motor_inverted=true\n"
-                       << "arm_neutral_ms=2000\n"
-                       << "zs_left_speed_gpio=12\n"
-                       << "zs_left_direction_gpio=24\n"
-                       << "zs_left_stop_gpio=22\n"
-                       << "zs_right_speed_gpio=13\n"
-                       << "zs_right_direction_gpio=23\n"
-                       << "zs_right_stop_gpio=27\n"
-                       << "zs_max_pwm=51\n"
-                       << "zs_pwm_frequency_hz=800\n"
-                       << "zs_left_direction_inverted=false\n"
-                       << "zs_right_direction_inverted=true\n";
-            };
-
-            write_config("/dev/serial/by-id/controller");
-            const auto config = roberta::control::load_rc_drive_config(path.string());
-            require(config.mapping.throttle_channel == 1, "one-based throttle channel was parsed incorrectly");
-            require(config.mapping.steering_channel == 0, "one-based steering channel was parsed incorrectly");
-            require(config.mapping.steering.inverted, "steering inversion was parsed incorrectly");
+            require(defaults.receiver_gpio == 17, "default receiver GPIO was incorrect");
             require(
-                config.roboteq_device == "/dev/serial/by-id/controller",
-                "Roboteq device path override was not parsed");
-            require(config.battery_nominal_volts == 24.5,
-                "nominal battery voltage was not parsed");
-            require(config.left_motor_channel == 2 && config.right_motor_channel == 1,
-                "Roboteq motor-channel mapping was parsed incorrectly");
-            require(
-                config.zs_left_speed_gpio == 12 && config.zs_left_direction_gpio == 24 &&
-                    config.zs_left_stop_gpio == 22 && config.zs_right_speed_gpio == 13 &&
-                    config.zs_right_direction_gpio == 23 && config.zs_right_stop_gpio == 27,
-                "legacy ZS GPIO mapping defaults were incorrect");
-            require(config.zs_max_pwm == 51 && config.zs_pwm_frequency_hz == 800,
-                "explicit ZS PWM cap was not preserved");
-            require(!config.zs_left_direction_inverted && config.zs_right_direction_inverted,
-                "ZS direction inversions were not parsed");
-            roberta::control::validate_rc_drive_config(config, true);
+                defaults.mapping.throttle_channel == 1 &&
+                    defaults.mapping.steering_channel == 0,
+                "hard-coded stick channel mapping was incorrect");
+            require(defaults.zs_pwm_frequency_hz == 800,
+                "default ZS PWM frequency was incorrect");
+            roberta::control::validate_rc_drive_config(defaults, true, true);
 
-            auto invalid_zs_pins = config;
+            auto invalid_zs_pins = defaults;
             invalid_zs_pins.zs_right_stop_gpio = invalid_zs_pins.receiver_gpio;
-            roberta::control::validate_rc_drive_config(invalid_zs_pins, false);
             bool rejected_duplicate_pin = false;
             try {
-                roberta::control::validate_rc_drive_config(invalid_zs_pins, false, true);
+                roberta::control::validate_rc_drive_config(invalid_zs_pins, true, true);
             } catch (const std::runtime_error&) {
                 rejected_duplicate_pin = true;
             }
             require(rejected_duplicate_pin, "duplicate receiver and ZS GPIO pins were accepted");
-
-            write_config("");
-            const auto default_path_config = roberta::control::load_rc_drive_config(path.string());
-            require(
-                default_path_config.roboteq_device == defaults.roboteq_device,
-                "empty Roboteq device setting did not use the default");
-            std::filesystem::remove(path);
         });
 
         return EXIT_SUCCESS;

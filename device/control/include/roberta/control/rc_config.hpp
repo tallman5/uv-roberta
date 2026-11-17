@@ -38,11 +38,9 @@ struct RcDriveConfig {
     bool zs_right_direction_inverted{true};
 };
 
-[[nodiscard]] RcDriveConfig load_rc_drive_config(const std::string& path);
 void validate_rc_drive_config(
     const RcDriveConfig& config,
     bool require_motor_device,
     bool require_zs_controller = false);
-void save_rc_drive_config(const std::string& path, const RcDriveConfig& config);
 
 }  // namespace roberta::control

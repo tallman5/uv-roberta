@@ -36,8 +36,6 @@ void on_signal(int) {
 }
 
 struct Options {
-    std::string config_path{"/etc/uv-roberta/rc-drive.conf"};
-    bool config_specified{};
     std::string controller{"roboteq"};
     bool controller_specified{};
     bool arm{};
@@ -66,15 +64,12 @@ Options parse_options(int argc, char** argv) {
         } else if (argument == "--test-channel" && index + 1 < argc) {
             options.test_channel = argv[++index];
             options.test_channel_specified = true;
-        } else if (argument == "--config" && index + 1 < argc) {
-            options.config_path = argv[++index];
-            options.config_specified = true;
         } else if (argument == "--controller" && index + 1 < argc) {
             options.controller = argv[++index];
             options.controller_specified = true;
         } else {
             throw std::runtime_error(
-                "Usage: roberta_rc_drive [--config PATH] [--controller roboteq|zs] "
+                "Usage: roberta_rc_drive [--controller roboteq|zs] "
                 "[--monitor | --calibrate | --arm | --test-controller [--test-channel left|right] | "
                 "--test-pins [--test-channel left|right]]");
         }
@@ -166,7 +161,6 @@ void calibrate_axis(
 }
 
 void run_calibration(
-    const std::string& config_path,
     roberta::control::RcDriveConfig& config,
     roberta::control::LinuxSbusReceiver& receiver) {
     calibrate_axis(
@@ -179,8 +173,15 @@ void run_calibration(
         config.mapping.steering_channel,
         "steering",
         config.mapping.steering);
-    roberta::control::save_rc_drive_config(config_path, config);
-    std::cout << "\nSaved calibrated ranges to " << config_path << '.' << std::endl;
+    std::cout << "\nCaptured calibration values (not saved):\n"
+              << "throttle: minimum=" << config.mapping.throttle.minimum
+              << ", center=" << config.mapping.throttle.center
+              << ", maximum=" << config.mapping.throttle.maximum << '\n'
+              << "steering: minimum=" << config.mapping.steering.minimum
+              << ", center=" << config.mapping.steering.center
+              << ", maximum=" << config.mapping.steering.maximum << '\n'
+              << "Hard-code these values in RcDriveConfig and rebuild before arming."
+              << std::endl;
 }
 
 void run_monitor(roberta::control::LinuxSbusReceiver& receiver) {
@@ -657,12 +658,7 @@ int main(int argc, char** argv) {
     int pigpio_handle = -1;
     try {
         const auto options = parse_options(argc, argv);
-        const bool use_default_config =
-            !options.config_specified &&
-            (options.test_pins || (options.test_controller && options.controller == "zs"));
-        auto config = use_default_config
-            ? RcDriveConfig{}
-            : load_rc_drive_config(options.config_path);
+        RcDriveConfig config;
         validate_rc_drive_config(
             config,
             (options.arm || options.test_controller) && options.controller == "roboteq",
@@ -696,7 +692,7 @@ int main(int argc, char** argv) {
             run_monitor(*receiver);
         } else if (options.calibrate) {
             std::cout << "Calibration only; motors are not opened or commanded." << std::endl;
-            run_calibration(options.config_path, config, *receiver);
+            run_calibration(config, *receiver);
         } else {
             if (options.controller == "roboteq") {
                 motor = std::make_unique<LinuxRoboteqDriver>(
