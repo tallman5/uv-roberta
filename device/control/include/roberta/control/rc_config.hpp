@@ -32,7 +32,7 @@ struct RcDriveConfig {
     int zs_right_speed_gpio{13};
     int zs_right_direction_gpio{23};
     int zs_right_stop_gpio{27};
-    int zs_max_pwm{51};
+    int zs_max_pwm{255};
     int zs_pwm_frequency_hz{800};
     bool zs_left_direction_inverted{};
     bool zs_right_direction_inverted{true};

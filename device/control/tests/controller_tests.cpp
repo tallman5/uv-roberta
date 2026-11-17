@@ -333,7 +333,7 @@ int main() {
         run("channel 10 selects low medium and high motor limits", [&] {
             using roberta::control::motor_command_scale;
             require(std::abs(motor_command_scale(172) - 1.0 / 3.0) < 1e-9, "low switch limit incorrect");
-            require(std::abs(motor_command_scale(992) - 2.0 / 3.0) < 1e-9, "medium switch limit incorrect");
+            require(std::abs(motor_command_scale(993) - 2.0 / 3.0) < 1e-9, "medium switch limit incorrect");
             require(std::abs(motor_command_scale(1811) - 1.0) < 1e-9, "high switch limit incorrect");
             require(motor_command_scale(171) == 0.0, "out-of-range switch value was accepted");
 
@@ -383,6 +383,7 @@ int main() {
                 defaults.roboteq_device ==
                     "/dev/serial/by-id/usb-Roboteq_Motor_Controller_MDC2XXX-if00",
                 "default Roboteq device path was incorrect");
+            require(defaults.zs_max_pwm == 255, "default ZS PWM cap was not full scale");
 
             const auto path = std::filesystem::temp_directory_path() / "roberta-rc-config-test.conf";
             const auto write_config = [&](const std::string& roboteq_device) {
@@ -439,7 +440,7 @@ int main() {
                     config.zs_right_direction_gpio == 23 && config.zs_right_stop_gpio == 27,
                 "legacy ZS GPIO mapping defaults were incorrect");
             require(config.zs_max_pwm == 51 && config.zs_pwm_frequency_hz == 800,
-                "conservative ZS PWM defaults were incorrect");
+                "explicit ZS PWM cap was not preserved");
             require(!config.zs_left_direction_inverted && config.zs_right_direction_inverted,
                 "ZS direction inversions were not parsed");
             roberta::control::validate_rc_drive_config(config, true);

@@ -30,8 +30,8 @@ zs_left_stop_gpio=22
 zs_right_speed_gpio=13
 zs_right_direction_gpio=23
 zs_right_stop_gpio=27
-# PWM duty cap: 51/255 (20%) for initial commissioning.
-zs_max_pwm=51
+# PWM duty cap: 255/255 (100%); channel 10 selects one-third, two-thirds, or full duty.
+zs_max_pwm=255
 zs_pwm_frequency_hz=800
 zs_left_direction_inverted=false
 zs_right_direction_inverted=true
