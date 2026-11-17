@@ -19,7 +19,7 @@ Start the executable manually with exactly one `--controller` target. It opens a
 
 The program can command motor torque. A raised frame reduces the risk of unintended vehicle motion but does not eliminate pinch, entanglement, or electrical hazards.
 
-The `images/zs-x11h-wiring.jpg` reference labels `P` as the external PWM signal input and `G` as its ground. For external PWM, it says the selection link is normally disconnected and should be short-circuited, and that the on-board speed potentiometer should be turned fully down to minimum. The board labels DIR and STOP as active-low and specifies 2.5–5 V PWM at 50 Hz–20 kHz. The Pi's 3.3 V output and configured 800 Hz are within those stated ranges. Confirm the pictured link and terminal locations on the actual board revision before changing wiring.
+The ZS-X11-H schematic shows separate DIR, BRAKE, and STOP terminals. The software's GPIO 22/27 outputs control STOP; connect them to the STOP terminals, not BRAKE. The driver does not control BRAKE. The `images/zs-x11h-wiring.jpg` reference labels `P` as the external PWM signal input and `G` as its ground. For external PWM, it says the selection link is normally disconnected and should be short-circuited, and that the on-board speed potentiometer should be turned fully down to minimum. The wiring reference says DIR and STOP are active-low and specifies 2.5–5 V PWM at 50 Hz–20 kHz. The Pi's 3.3 V output and configured 800 Hz are within those stated ranges. Confirm the pictured link and terminal locations on the actual board revision before changing wiring.
 
 ## Install/build on Raspberry Pi OS
 
